@@ -1,0 +1,8 @@
+gcp_project_id = "my-gcp-project"
+cluster_name   = "my-wif-cluster"
+
+# OCM token: use environment variable instead:
+# export OSDGOOGLE_TOKEN="your-token"
+
+# GCP: use Application Default Credentials for project lookup:
+# gcloud auth application-default login

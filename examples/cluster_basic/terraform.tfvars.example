@@ -1,0 +1,8 @@
+gcp_project_id = "my-gcp-project"
+cluster_name   = "my-osd-cluster"
+
+# OCM token: use environment variable instead:
+# export OSDGOOGLE_TOKEN="your-token"
+
+# GCP: use Application Default Credentials:
+# gcloud auth application-default login
