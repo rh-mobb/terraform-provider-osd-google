@@ -29,6 +29,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	cmv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
+
+	"github.com/rh-mobb/terraform-provider-osd-google/provider/common"
 )
 
 // DNSDomainResource implements the osdgoogle_dns_domain resource.
@@ -74,7 +76,7 @@ func (r *DNSDomainResource) Configure(ctx context.Context, req resource.Configur
 	}
 	conn, ok := req.ProviderData.(*sdk.Connection)
 	if !ok {
-		resp.Diagnostics.AddError("unexpected provider data type", fmt.Sprintf("expected *sdk.Connection, got %T", req.ProviderData))
+		resp.Diagnostics.AddError("Unexpected Resource Configure Type", fmt.Sprintf("Expected *sdk.Connection, got: %T. Please report this issue to the provider developers.", req.ProviderData))
 		return
 	}
 	r.collection = conn.ClustersMgmt().V1().DNSDomains()
@@ -118,7 +120,7 @@ func (r *DNSDomainResource) Read(ctx context.Context, req resource.ReadRequest, 
 	getResp, err := r.collection.DNSDomain(state.ID.ValueString()).Get().SendContext(ctx)
 	if err != nil {
 		if getResp != nil && getResp.Status() == http.StatusNotFound {
-			resp.State.RemoveResource(ctx)
+			common.HandleNotFound(ctx, resp, "dns_domain", state.ID.ValueString())
 			return
 		}
 		resp.Diagnostics.AddError("failed to get DNS domain", err.Error())

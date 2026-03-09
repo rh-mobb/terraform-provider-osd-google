@@ -17,9 +17,10 @@ description: |-
 
 ### Optional
 
-- `client_id` (String) OpenID client identifier. The default is `cloud-services`.
-- `client_secret` (String, Sensitive) OpenID client secret.
+- `client_id` (String) OpenID client identifier for client credentials authentication (alternative to token). Use with client_secret. Env: OSDGOOGLE_CLIENT_ID.
+- `client_secret` (String, Sensitive) OpenID client secret for client credentials authentication. Env: OSDGOOGLE_CLIENT_SECRET.
 - `insecure` (Boolean) When set to 'true' enables insecure communication with the server. This disables verification of TLS certificates and host names. Not recommended for production.
+- `openshift_version` (String) Default OpenShift version (x.y.z) for cluster and WIF resources. Overridable per resource.
 - `token` (String, Sensitive) Access or refresh token generated from https://console.redhat.com/openshift/token/rosa
 - `token_url` (String) TokenURL is the URL for requesting OpenID access tokens. The default is `https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token`
 - `trusted_cas` (String) PEM encoded certificates of authorities that will be trusted. If not specified, the system default CAs are used.

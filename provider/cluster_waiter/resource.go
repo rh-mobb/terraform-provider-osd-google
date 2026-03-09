@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -29,7 +30,7 @@ import (
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	cmv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 
-	"github.com/redhat/terraform-provider-osd-google/provider/common"
+	"github.com/rh-mobb/terraform-provider-osd-google/provider/common"
 )
 
 // ClusterWaiterResource implements the osdgoogle_cluster_waiter resource.
@@ -40,6 +41,7 @@ type ClusterWaiterResource struct {
 
 var _ resource.Resource = &ClusterWaiterResource{}
 var _ resource.ResourceWithConfigure = &ClusterWaiterResource{}
+var _ resource.ResourceWithImportState = &ClusterWaiterResource{}
 
 const defaultTimeoutMinutes = 60
 
@@ -84,7 +86,7 @@ func (r *ClusterWaiterResource) Configure(ctx context.Context, req resource.Conf
 	}
 	conn, ok := req.ProviderData.(*sdk.Connection)
 	if !ok {
-		resp.Diagnostics.AddError("unexpected provider data type", fmt.Sprintf("expected *sdk.Connection, got %T", req.ProviderData))
+		resp.Diagnostics.AddError("Unexpected Resource Configure Type", fmt.Sprintf("Expected *sdk.Connection, got: %T. Please report this issue to the provider developers.", req.ProviderData))
 		return
 	}
 	r.collection = conn.ClustersMgmt().V1().Clusters()
@@ -129,6 +131,10 @@ func (r *ClusterWaiterResource) Update(ctx context.Context, req resource.UpdateR
 
 func (r *ClusterWaiterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	resp.State.RemoveResource(ctx)
+}
+
+func (r *ClusterWaiterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("cluster_id"), req, resp)
 }
 
 func (r *ClusterWaiterResource) startPolling(ctx context.Context, state *ClusterWaiterState) (*ClusterWaiterState, error) {

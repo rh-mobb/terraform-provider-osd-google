@@ -18,6 +18,7 @@ package datasources
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -70,16 +71,14 @@ func (d *RegionsDataSource) Configure(ctx context.Context, req datasource.Config
 	}
 	conn, ok := req.ProviderData.(*sdk.Connection)
 	if !ok {
-		resp.Diagnostics.AddError("unexpected provider data type", "expected *sdk.Connection")
+		resp.Diagnostics.AddError("Unexpected Data Source Configure Type", fmt.Sprintf("Expected *sdk.Connection, got: %T. Please report this issue to the provider developers.", req.ProviderData))
 		return
 	}
 	d.connection = conn
 }
 
 func (d *RegionsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var config struct {
-		GCPProjectID types.String `tfsdk:"gcp_project_id"`
-	}
+	var config RegionsState
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return

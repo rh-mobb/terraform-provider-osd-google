@@ -18,6 +18,7 @@ package datasources
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -67,7 +68,7 @@ func (d *VersionsDataSource) Configure(ctx context.Context, req datasource.Confi
 	}
 	conn, ok := req.ProviderData.(*sdk.Connection)
 	if !ok {
-		resp.Diagnostics.AddError("unexpected provider data type", "expected *sdk.Connection")
+		resp.Diagnostics.AddError("Unexpected Data Source Configure Type", fmt.Sprintf("Expected *sdk.Connection, got: %T. Please report this issue to the provider developers.", req.ProviderData))
 		return
 	}
 	d.collection = conn.ClustersMgmt().V1().Versions()

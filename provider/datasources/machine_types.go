@@ -18,6 +18,7 @@ package datasources
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -75,17 +76,14 @@ func (d *MachineTypesDataSource) Configure(ctx context.Context, req datasource.C
 	}
 	conn, ok := req.ProviderData.(*sdk.Connection)
 	if !ok {
-		resp.Diagnostics.AddError("unexpected provider data type", "expected *sdk.Connection")
+		resp.Diagnostics.AddError("Unexpected Data Source Configure Type", fmt.Sprintf("Expected *sdk.Connection, got: %T. Please report this issue to the provider developers.", req.ProviderData))
 		return
 	}
 	d.connection = conn
 }
 
 func (d *MachineTypesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var config struct {
-		Region       types.String `tfsdk:"region"`
-		GCPProjectID types.String `tfsdk:"gcp_project_id"`
-	}
+	var config MachineTypesState
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return

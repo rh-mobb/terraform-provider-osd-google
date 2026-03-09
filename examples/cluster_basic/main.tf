@@ -13,53 +13,11 @@
 #   or GOOGLE_APPLICATION_CREDENTIALS for the Google provider
 #
 # Local development:
-#   make install                  # Install provider to ~/.terraform.d/plugins
-#   export OSDGOOGLE_TOKEN="..."   # Or OSDGOOGLE_CLIENT_ID + OSDGOOGLE_CLIENT_SECRET
+#   make dev-setup                # Build binary and print ~/.terraformrc config
+#   export OSDGOOGLE_TOKEN="..."  # Or OSDGOOGLE_CLIENT_ID + OSDGOOGLE_CLIENT_SECRET
 #   gcloud auth application-default login
-#   terraform init
 #   terraform plan -var="gcp_project_id=YOUR_PROJECT"
 #   terraform apply -var="gcp_project_id=YOUR_PROJECT"
-#
-# Production (when published): change source to registry.terraform.io/redhat/osd-google
-
-terraform {
-  required_providers {
-    osdgoogle = {
-      source  = "terraform.local/local/osd-google"
-      version = ">= 0.0.1"
-    }
-    google = {
-      source  = "hashicorp/google"
-      version = ">= 5.0"
-    }
-  }
-}
-
-provider "osdgoogle" {
-  # Token from OSDGOOGLE_TOKEN env var when not set here
-}
-
-provider "google" {
-  project = var.gcp_project_id
-}
-
-variable "ocm_token" {
-  type        = string
-  sensitive   = true
-  description = "OCM token (optional; set token = var.ocm_token in provider to use)"
-  default     = ""
-}
-
-variable "gcp_project_id" {
-  type        = string
-  description = "GCP project ID for the cluster"
-}
-
-variable "cluster_name" {
-  type        = string
-  default     = "my-osd-cluster"
-  description = "Name of the cluster"
-}
 
 data "google_service_account" "osd_ccs_admin" {
   account_id = "osd-ccs-admin"
@@ -88,29 +46,4 @@ resource "osdgoogle_cluster" "example" {
     private_key_id = local.sa_key_json.private_key_id
     private_key    = local.sa_key_json.private_key
   }
-}
-
-output "osd_ccs_admin_email" {
-  value       = data.google_service_account.osd_ccs_admin.email
-  description = "OSD CCS admin service account email"
-}
-
-output "cluster_id" {
-  value       = osdgoogle_cluster.example.id
-  description = "OCM cluster ID"
-}
-
-output "cluster_state" {
-  value       = osdgoogle_cluster.example.state
-  description = "Cluster state"
-}
-
-output "api_url" {
-  value       = osdgoogle_cluster.example.api_url
-  description = "Kubernetes API URL"
-}
-
-output "console_url" {
-  value       = osdgoogle_cluster.example.console_url
-  description = "OpenShift web console URL"
 }

@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache-dependency-path: go.sum
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Go mod download
+        run: go mod download
+
+      - name: Lint (gofmt)
+        run: |
+          if [ -n "$(gofmt -l . 2>/dev/null | grep -v '^references/' | grep -v '^reference/')" ]; then
+            echo "Go files need formatting. Run: make fmt_go"
+            gofmt -l . | grep -v '^references/' | grep -v '^reference/' || true
+            exit 1
+          fi
+
+      - name: Terraform fmt check
+        run: |
+          terraform fmt -check -recursive examples 2>/dev/null || true
+          terraform fmt -check -recursive tests 2>/dev/null || true
+
+      - name: Unit tests
+        run: make unit-test
+
+      - name: Build
+        run: make build
+
+      - name: Docs
+        run: make docs
+        continue-on-error: true

@@ -19,40 +19,48 @@ package common
 import (
 	"testing"
 
+	. "github.com/onsi/ginkgo/v2/dsl/core" // nolint
+	. "github.com/onsi/gomega"             // nolint
+
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func TestShouldPatchString(t *testing.T) {
-	tests := []struct {
-		name    string
-		state   types.String
-		plan    types.String
-		wantVal string
-		wantOk  bool
-	}{
-		{"both empty", types.StringNull(), types.StringNull(), "", false},
-		{"state null plan set", types.StringNull(), types.StringValue("x"), "x", true},
-		{"both same", types.StringValue("a"), types.StringValue("a"), "", false},
-		{"different", types.StringValue("a"), types.StringValue("b"), "b", true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			val, ok := ShouldPatchString(tt.state, tt.plan)
-			if val != tt.wantVal || ok != tt.wantOk {
-				t.Errorf("ShouldPatchString() = (%q, %v), want (%q, %v)", val, ok, tt.wantVal, tt.wantOk)
-			}
-		})
-	}
+func TestCommon(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Common Helpers Suite")
 }
 
-func TestHasValue(t *testing.T) {
-	if HasValue(types.StringNull()) {
-		t.Error("HasValue(null) should be false")
-	}
-	if HasValue(types.StringValue("")) {
-		t.Error("HasValue(empty) should be false")
-	}
-	if !HasValue(types.StringValue("x")) {
-		t.Error("HasValue(x) should be true")
-	}
-}
+var _ = Describe("ShouldPatchString", func() {
+	It("returns empty and false when both are empty", func() {
+		val, ok := ShouldPatchString(types.StringNull(), types.StringNull())
+		Expect(val).To(Equal(""))
+		Expect(ok).To(BeFalse())
+	})
+	It("returns plan value and true when state is null and plan is set", func() {
+		val, ok := ShouldPatchString(types.StringNull(), types.StringValue("x"))
+		Expect(val).To(Equal("x"))
+		Expect(ok).To(BeTrue())
+	})
+	It("returns empty and false when both are same", func() {
+		val, ok := ShouldPatchString(types.StringValue("a"), types.StringValue("a"))
+		Expect(val).To(Equal(""))
+		Expect(ok).To(BeFalse())
+	})
+	It("returns plan value and true when different", func() {
+		val, ok := ShouldPatchString(types.StringValue("a"), types.StringValue("b"))
+		Expect(val).To(Equal("b"))
+		Expect(ok).To(BeTrue())
+	})
+})
+
+var _ = Describe("HasValue", func() {
+	It("returns false for null", func() {
+		Expect(HasValue(types.StringNull())).To(BeFalse())
+	})
+	It("returns false for empty string", func() {
+		Expect(HasValue(types.StringValue(""))).To(BeFalse())
+	})
+	It("returns true for non-empty string", func() {
+		Expect(HasValue(types.StringValue("x"))).To(BeTrue())
+	})
+})

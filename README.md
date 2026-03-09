@@ -9,6 +9,7 @@ A [Terraform](https://www.terraform.io/) provider for managing [OpenShift Dedica
 | Resource | Description |
 |----------|-------------|
 | `osdgoogle_cluster` | Create and manage OSD clusters on GCP |
+| `osdgoogle_cluster_admin` | HTPasswd identity provider with cluster-admin user |
 | `osdgoogle_wif_config` | Workload Identity Federation configuration for OSD on GCP |
 | `osdgoogle_machine_pool` | Machine pools for worker nodes |
 | `osdgoogle_cluster_waiter` | Wait for a cluster to reach a desired state |
@@ -40,37 +41,22 @@ A [Terraform](https://www.terraform.io/) provider for managing [OpenShift Dedica
 
 ## Installation
 
-### From Terraform Registry (when published)
+### From Terraform Registry
 
 ```hcl
 terraform {
   required_providers {
     osdgoogle = {
-      source  = "registry.terraform.io/redhat/osd-google"
+      source  = "registry.terraform.io/rh-mobb/osd-google"
       version = ">= 0.0.1"
     }
   }
 }
 ```
 
-### From Source
+### From Source (for development)
 
-```bash
-make install
-```
-
-This builds the provider and installs it to `~/.terraform.d/plugins/terraform.local/local/osd-google/`. Terraform will find it when using:
-
-```hcl
-terraform {
-  required_providers {
-    osdgoogle = {
-      source  = "terraform.local/local/osd-google"
-      version = ">= 0.0.1"
-    }
-  }
-}
-```
+See the [Development Workflow](#development-workflow) section below for how to build and test the provider locally using `dev_overrides`.
 
 ## Authentication
 
@@ -197,25 +183,46 @@ CCS clusters (your own GCP project) require `wif_config_id` or `gcp_authenticati
 
 ## Examples
 
-The examples use the **local provider build** by default. Run `make install` from the repo root first, then see [examples/README.md](examples/README.md) for details.
+The examples use the [Terraform Registry](https://registry.terraform.io/providers/rh-mobb) source by default.
+For local development, use `dev_overrides` so Terraform uses your local build without changing any example files — see [Development Workflow](#development-workflow).
 
 | Example | Description |
 |---------|-------------|
 | [cluster_basic](examples/cluster_basic) | Basic CCS cluster (uses existing osd-ccs-admin SA) |
-| [cluster_wif](examples/cluster_wif) | CCS cluster with Workload Identity Federation |
+| [cluster_admin](examples/cluster_admin) | Cluster with HTPasswd admin user |
+| [cluster_wif](examples/cluster_wif) | CCS cluster with Workload Identity Federation (requires two-phase apply; uses one WIF per cluster) |
+| [cluster_with_vpc](examples/cluster_with_vpc) | Cluster with module-managed VPC (BYOVPC) |
 | [cluster_psc](examples/cluster_psc) | Cluster with Private Service Connect and Secure Boot |
 | [cluster_shared_vpc](examples/cluster_shared_vpc) | Cluster using a Shared VPC |
 
-Run an example:
+Run an example (with `dev_overrides` configured — see [Development Workflow](#development-workflow)):
 
 ```bash
-cd examples/cluster_basic
+make build
 export OSDGOOGLE_TOKEN="your-token"
-gcloud auth application-default login   # For Google provider
-terraform init
+gcloud auth application-default login
+cd examples/cluster_basic
 terraform plan -var="gcp_project_id=YOUR_GCP_PROJECT"
 terraform apply -var="gcp_project_id=YOUR_GCP_PROJECT"
 ```
+
+**cluster_wif:** The WIF example requires a two-phase apply because the GCP module's `for_each` depends on OCM's blueprint (known only after the WIF config is created). Use:
+
+```bash
+make apply-wif-cluster
+```
+
+See [examples/cluster_wif/README.md](examples/cluster_wif/README.md) for details.
+
+## AI Agent Development
+
+When developing with an AI coding assistant (Cursor, Claude, Copilot, etc.), clone the upstream reference repositories into `references/` before starting. These repos are gitignored and provide agents with offline context for the OCM API, the Go SDK, and the canonical RHCS provider structure — reducing hallucinations and improving code quality significantly.
+
+```bash
+make references
+```
+
+Run the same command at any time to pull the latest changes from each repo's default branch. See [AGENTS.md](AGENTS.md#references) for a description of each reference and what it is useful for.
 
 ## Development
 
@@ -225,28 +232,99 @@ terraform apply -var="gcp_project_id=YOUR_GCP_PROJECT"
 - [Terraform](https://www.terraform.io/downloads)
 - [jq](https://jqlang.github.io/jq/) (for `make install`)
 
-### Build
+### Development Workflow
+
+The recommended way to develop and test the provider locally is with Terraform's `dev_overrides`.
+This lets you build the provider once and use it in any example directory without changing the `required_providers` source or running `terraform init`.
+
+#### One-time setup
+
+1. Build the provider and get the `~/.terraformrc` snippet:
 
 ```bash
-make build
+make dev-setup
 ```
 
-### Install Locally
+2. Add the printed block to `~/.terraformrc` (create the file if it doesn't exist):
+
+```hcl
+provider_installation {
+  dev_overrides {
+    "registry.terraform.io/rh-mobb/osd-google" = "/path/to/terraform-provider-osd-google"
+  }
+  direct {}
+}
+```
+
+Replace the path with the actual repo directory printed by `make dev-setup`.
+
+#### Iterative development loop
+
+After the one-time setup, the dev cycle is:
+
+```bash
+make build                          # rebuild after code changes
+cd examples/cluster_basic           # or cluster_wif (use make apply-wif-cluster)
+terraform plan -var="gcp_project_id=YOUR_PROJECT"
+terraform apply -var="gcp_project_id=YOUR_PROJECT"
+```
+
+No `terraform init` is needed when using `dev_overrides` — Terraform finds the provider binary directly.
+
+> **Note:** Terraform prints a warning about `dev_overrides` being active. This is expected and safe to ignore during development.
+
+When you're done developing, remove or comment out the `dev_overrides` block in `~/.terraformrc` to go back to using the registry provider.
+
+#### Debugging with Delve
+
+To step through provider code with a debugger:
+
+```bash
+go build -gcflags="all=-N -l" -o terraform-provider-osd-google .
+dlv exec ./terraform-provider-osd-google -- -debug
+```
+
+Delve prints a `TF_REATTACH_PROVIDERS` value. Export it in another terminal:
+
+```bash
+export TF_REATTACH_PROVIDERS='<value printed by delve>'
+cd examples/cluster_wif
+terraform apply    # attaches to the running provider process
+```
+
+#### Provider logging
+
+Set `TF_LOG` to see provider-level debug output:
+
+```bash
+TF_LOG=DEBUG terraform apply
+TF_LOG_PROVIDER=TRACE terraform plan   # provider logs only (no Terraform core noise)
+```
+
+### Alternative: Install to plugins directory
+
+For local development before the provider is published, use the local plugins directory:
+
+1. Install the provider:
 
 ```bash
 make install
 ```
 
+2. Terraform automatically checks `~/.terraform.d/plugins` for local providers. Ensure no `provider_installation` block in `~/.terraformrc` overrides this. If you had `dev_overrides` for the registry source, remove it.
+
+3. Run `terraform init` in the example directory.
+
 ### Run Tests
 
 ```bash
-# Unit tests
+# Unit tests (no infrastructure required)
 make unit-test
 
-# Subsystem tests (require make install first, use OCM mock)
+# Subsystem tests (uses OCM mock server; requires make install)
 make subsystem-test
 
-# Acceptance tests (require OCM_TOKEN, GCP_PROJECT_ID)
+# Acceptance tests (real OCM + GCP; requires OCM_TOKEN and GCP_PROJECT_ID)
 make acceptance-test
 ```
 
@@ -291,8 +369,12 @@ Provider documentation is generated in the [docs/](docs/) directory:
 └── docs/                   # Generated documentation
 ```
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, and how to submit changes. By participating, you agree to our [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## License
 
 Copyright (c) 2025 Red Hat, Inc.
 
-Licensed under the Apache License, Version 2.0.
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for the full text.

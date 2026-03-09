@@ -1,0 +1,23 @@
+# OCM offline token or access token (required)
+#ocm_token = "your-token"
+
+# GCP service project ID where cluster resources are created (required)
+gcp_project_id = "my-service-project"
+
+# GCP project number, numeric (required)
+gcp_project_number = "123456789012"
+
+# GCP host project ID that owns the shared VPC (required)
+vpc_host_project_id = "my-host-project"
+
+# Name of the shared VPC network (required)
+vpc_name = "my-shared-vpc"
+
+# Subnet name for worker nodes (required)
+compute_subnet = "worker-subnet"
+
+# Subnet name for control plane nodes (required)
+control_plane_subnet = "control-plane-subnet"
+
+# Name of the OSD cluster
+cluster_name = "my-shared-vpc-cluster"

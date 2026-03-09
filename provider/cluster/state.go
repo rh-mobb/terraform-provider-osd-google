@@ -35,12 +35,16 @@ type ClusterState struct {
 	DomainPrefix  types.String `tfsdk:"domain_prefix"`
 	CCSEnabled    types.Bool   `tfsdk:"ccs_enabled"`
 
+	BillingModel         types.String `tfsdk:"billing_model"`
+	MarketplaceGCPTerms  types.Bool   `tfsdk:"marketplace_gcp_terms"`
+
 	ComputeMachineType types.String `tfsdk:"compute_machine_type"`
 	ComputeNodes      types.Int64  `tfsdk:"compute_nodes"`
 	AvailabilityZones types.List   `tfsdk:"availability_zones"`
 	Properties        types.Map    `tfsdk:"properties"`
 
 	WIFConfigID types.String `tfsdk:"wif_config_id"`
+	WifVerifyTimeoutMinutes types.Int64 `tfsdk:"wif_verify_timeout_minutes"`
 
 	WaitForCreateComplete types.Bool  `tfsdk:"wait_for_create_complete"`
 	WaitTimeout           types.Int64 `tfsdk:"wait_timeout"`

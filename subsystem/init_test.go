@@ -19,7 +19,7 @@ package subsystem
 import (
 	. "github.com/onsi/ginkgo/v2/dsl/core" // nolint
 	. "github.com/onsi/gomega"             // nolint
-	. "github.com/redhat/terraform-provider-osd-google/subsystem/framework"
+	. "github.com/rh-mobb/terraform-provider-osd-google/subsystem/framework"
 )
 
 var _ = Describe("Init", func() {

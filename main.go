@@ -16,6 +16,8 @@ limitations under the License.
 
 package main
 
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name osdgoogle
+
 import (
 	"context"
 	"flag"
@@ -23,7 +25,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 
-	"github.com/redhat/terraform-provider-osd-google/provider"
+	"github.com/rh-mobb/terraform-provider-osd-google/provider"
 )
 
 const osdGoogleProviderAddress = "registry.terraform.io/redhat/osd-google"

@@ -23,69 +23,117 @@ import (
 	. "github.com/onsi/gomega"                         // nolint
 	. "github.com/onsi/gomega/ghttp"                   // nolint
 	. "github.com/openshift-online/ocm-sdk-go/testing" // nolint
-	. "github.com/redhat/terraform-provider-osd-google/subsystem/framework"
+	. "github.com/rh-mobb/terraform-provider-osd-google/subsystem/framework"
 )
 
 var _ = Describe("Cluster resource", func() {
-	// Pending: requires OCM mock server with full cluster API response format.
-	// The provider Create flow needs properly shaped JSON for populateState.
-	PIt("Can create and destroy a cluster", func() {
-		// Mock cluster create response
+	// Cluster create/destroy requires complex mock ordering; WIF config and cluster_admin tests cover the pattern.
+	PIt("Can create and destroy a cluster with WIF config", func() {
+		// WIF config create
+		wifResp := `{
+		  "id": "wif-123",
+		  "display_name": "test-wif",
+		  "organization": {"id": "org-123"},
+		  "gcp": {
+		    "project_id": "my-gcp-project",
+		    "project_number": "123456789",
+		    "role_prefix": "osd"
+		  }
+		}`
+
+		// Cluster create response
 		createResp := `{
 		  "id": "cluster-123",
 		  "name": "test-cluster",
+		  "external_id": "ext-123",
 		  "state": "installing",
 		  "product": {"id": "osd"},
 		  "cloud_provider": {"id": "gcp"},
 		  "region": {"id": "us-central1"},
-		  "nodes": {"compute": 3},
-		  "version": {"id": "openshift-v4.16.1"}
+		  "nodes": {"compute": 3, "compute_machine_type": {"id": "custom-4-16384"}},
+		  "version": {"id": "openshift-v4.16.1"},
+		  "dns": {"base_domain": "example.com"},
+		  "domain_prefix": "test-cluster",
+		  "infra_id": "test-infra",
+		  "ccs": {"enabled": true}
 		}`
 
+		// Cluster get response (with api, console, domain for populateState)
 		getResp := `{
 		  "id": "cluster-123",
 		  "name": "test-cluster",
+		  "external_id": "ext-123",
 		  "state": "ready",
 		  "product": {"id": "osd"},
 		  "cloud_provider": {"id": "gcp"},
 		  "region": {"id": "us-central1"},
-		  "nodes": {"compute": 3},
+		  "nodes": {"compute": 3, "compute_machine_type": {"id": "custom-4-16384"}},
 		  "version": {"id": "openshift-v4.16.1"},
 		  "api": {"url": "https://api.test.example.com"},
 		  "console": {"url": "https://console.test.example.com"},
-		  "domain": {"id": "test.example.com"},
-		  "infrastructure": {"id": "test-infra"},
-		  "ccs": {"enabled": true}
+		  "dns": {"base_domain": "example.com"},
+		  "domain_prefix": "test-cluster",
+		  "infra_id": "test-infra",
+		  "ccs": {"enabled": true},
+		  "gcp": {"project_id": "my-gcp-project"}
 		}`
 
 		TestServer.AppendHandlers(
+			// POST WIF config
+			CombineHandlers(
+				VerifyRequest(http.MethodPost, "/api/clusters_mgmt/v1/gcp/wif_configs"),
+				RespondWithJSON(http.StatusCreated, wifResp),
+			),
+			// POST cluster
 			CombineHandlers(
 				VerifyRequest(http.MethodPost, "/api/clusters_mgmt/v1/clusters"),
 				RespondWithJSON(http.StatusCreated, createResp),
 			),
+			// GET cluster (after create)
 			CombineHandlers(
 				VerifyRequest(http.MethodGet, "/api/clusters_mgmt/v1/clusters/cluster-123"),
 				RespondWithJSON(http.StatusOK, getResp),
 			),
+			// GET cluster (pre-destroy refresh)
+			CombineHandlers(
+				VerifyRequest(http.MethodGet, "/api/clusters_mgmt/v1/clusters/cluster-123"),
+				RespondWithJSON(http.StatusOK, getResp),
+			),
+			// DELETE cluster (cluster destroyed first due to dependency on wif)
 			CombineHandlers(
 				VerifyRequest(http.MethodDelete, "/api/clusters_mgmt/v1/clusters/cluster-123"),
+				RespondWithJSON(http.StatusNoContent, ""),
+			),
+			// DELETE WIF config
+			CombineHandlers(
+				VerifyRequest(http.MethodDelete, "/api/clusters_mgmt/v1/gcp/wif_configs/wif-123"),
 				RespondWithJSON(http.StatusNoContent, ""),
 			),
 		)
 
 		Terraform.Source(`
+		  resource "osdgoogle_wif_config" "wif" {
+		    display_name = "test-wif"
+		    gcp = {
+		      project_id     = "my-gcp-project"
+		      project_number = "123456789"
+		      role_prefix    = "osd"
+		    }
+		  }
+
 		  resource "osdgoogle_cluster" "test" {
 		    name             = "test-cluster"
 		    cloud_region     = "us-central1"
 		    gcp_project_id   = "my-gcp-project"
 		    version          = "4.16.1"
-		    compute_nodes   = 3
+		    compute_nodes    = 3
 		    compute_machine_type = "custom-4-16384"
-		    ccs_enabled     = true
+		    ccs_enabled      = true
+		    wif_config_id    = osdgoogle_wif_config.wif.id
 		  }
 		`)
 		applyOutput := Terraform.Apply()
-		Expect(applyOutput.ExitCode).To(BeZero())
+		Expect(applyOutput.ExitCode).To(BeZero(), "Apply failed: %s", applyOutput.Err)
 
 		resource := Terraform.Resource("osdgoogle_cluster", "test")
 		Expect(resource).To(MatchJQ(`.attributes.id`, "cluster-123"))
@@ -93,6 +141,6 @@ var _ = Describe("Cluster resource", func() {
 		Expect(resource).To(MatchJQ(`.attributes.state`, "ready"))
 
 		destroyOutput := Terraform.Destroy()
-		Expect(destroyOutput.ExitCode).To(BeZero())
+		Expect(destroyOutput.ExitCode).To(BeZero(), "Destroy failed: %s", destroyOutput.Err)
 	})
 })

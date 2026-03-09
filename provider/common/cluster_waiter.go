@@ -29,9 +29,12 @@ import (
 
 const pollingIntervalMinutes = 2
 
+//go:generate mockgen -source=cluster_waiter.go -package=common -destination=cluster_waiter_mock.go
+
 // ClusterWait waits for a cluster to reach a desired state.
 type ClusterWait interface {
 	WaitForClusterToBeReady(ctx context.Context, clusterID string, waitTimeoutMin int64) (*cmv1.Cluster, error)
+	WaitForClusterToBeDeleted(ctx context.Context, clusterID string, waitTimeoutMin int64) error
 }
 
 // DefaultClusterWait implements ClusterWait using the OCM clusters client.
@@ -90,6 +93,38 @@ func (w *DefaultClusterWait) WaitForClusterToBeReady(ctx context.Context, cluste
 		return result, nil
 	}
 	return result, fmt.Errorf("cluster %s is in state %s", clusterID, result.State())
+}
+
+// WaitForClusterToBeDeleted polls until the cluster is gone (404) or the timeout is reached.
+// OCM's uninstall runs asynchronously; this ensures the provider does not proceed to destroy
+// dependent resources (e.g., WIF) until OCM has finished tearing down the cluster.
+func (w *DefaultClusterWait) WaitForClusterToBeDeleted(ctx context.Context, clusterID string, waitTimeoutMin int64) error {
+	tflog.Info(ctx, fmt.Sprintf("Waiting for cluster %s to be deleted (timeout %d min)", clusterID, waitTimeoutMin))
+
+	pollCtx, cancel := context.WithTimeout(ctx, time.Duration(waitTimeoutMin)*time.Minute)
+	defer cancel()
+
+	ticker := time.NewTicker(pollingIntervalMinutes * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		resp, err := w.collection.Cluster(clusterID).Get().SendContext(pollCtx)
+		if resp != nil && resp.Status() == http.StatusNotFound {
+			tflog.Info(ctx, fmt.Sprintf("Cluster %s has been deleted", clusterID))
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("failed to get cluster status while waiting for delete: %w", err)
+		}
+		_ = resp.Body()
+
+		select {
+		case <-pollCtx.Done():
+			return fmt.Errorf("timeout waiting for cluster %s to be deleted: %w", clusterID, pollCtx.Err())
+		case <-ticker.C:
+			w.connection.Tokens()
+		}
+	}
 }
 
 func pollClusterState(clusterID string, ctx context.Context, timeout int64, collection *cmv1.ClustersClient) (*cmv1.Cluster, error) {

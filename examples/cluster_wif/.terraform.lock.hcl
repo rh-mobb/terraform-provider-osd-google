@@ -25,6 +25,6 @@ provider "terraform.local/local/osd-google" {
   version     = "0.0.1"
   constraints = ">= 0.0.1"
   hashes = [
-    "h1:4T0J9FBsjSAbv2EoeW+j9HstloP4F285UizRl/RGQ3c=",
+    "h1:c5WDVonKeK0gOIDAlINmW4bCQZhkixkQ6KkCPRDDFWM=",
   ]
 }

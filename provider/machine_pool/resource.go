@@ -30,7 +30,7 @@ import (
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	cmv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 
-	"github.com/redhat/terraform-provider-osd-google/provider/common"
+	"github.com/rh-mobb/terraform-provider-osd-google/provider/common"
 )
 
 // MachinePoolResource implements the osdgoogle_machine_pool resource.
@@ -131,7 +131,7 @@ func (r *MachinePoolResource) Configure(ctx context.Context, req resource.Config
 	}
 	conn, ok := req.ProviderData.(*sdk.Connection)
 	if !ok {
-		resp.Diagnostics.AddError("unexpected provider data type", fmt.Sprintf("expected *sdk.Connection, got %T", req.ProviderData))
+		resp.Diagnostics.AddError("Unexpected Resource Configure Type", fmt.Sprintf("Expected *sdk.Connection, got: %T. Please report this issue to the provider developers.", req.ProviderData))
 		return
 	}
 	r.collection = conn.ClustersMgmt().V1().Clusters()
@@ -173,7 +173,7 @@ func (r *MachinePoolResource) Read(ctx context.Context, req resource.ReadRequest
 	getResp, err := r.collection.Cluster(state.ClusterID.ValueString()).MachinePools().MachinePool(state.ID.ValueString()).Get().SendContext(ctx)
 	if err != nil {
 		if getResp != nil && getResp.Status() == http.StatusNotFound {
-			resp.State.RemoveResource(ctx)
+			common.HandleNotFound(ctx, resp, "machine_pool", state.ClusterID.ValueString()+"/"+state.ID.ValueString())
 			return
 		}
 		resp.Diagnostics.AddError("failed to get machine pool", err.Error())

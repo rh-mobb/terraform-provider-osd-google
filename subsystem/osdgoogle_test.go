@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/gomega"             // nolint
 	"github.com/onsi/gomega/format"
 	. "github.com/openshift-online/ocm-sdk-go/testing" // nolint
-	. "github.com/redhat/terraform-provider-osd-google/subsystem/framework"
+	. "github.com/rh-mobb/terraform-provider-osd-google/subsystem/framework"
 )
 
 func TestSubsystem(t *testing.T) {

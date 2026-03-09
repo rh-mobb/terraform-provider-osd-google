@@ -3,12 +3,12 @@
 page_title: "osdgoogle_cluster Resource - osdgoogle"
 subcategory: ""
 description: |-
-  OpenShift Dedicated (OSD) cluster on Google Cloud Platform.
+  OpenShift Dedicated (OSD) cluster on Google Cloud Platform. CCS clusters require either wifconfigid (Workload Identity Federation) or gcp_authentication (service account key).
 ---
 
 # osdgoogle_cluster (Resource)
 
-OpenShift Dedicated (OSD) cluster on Google Cloud Platform.
+OpenShift Dedicated (OSD) cluster on Google Cloud Platform. CCS clusters require either wif_config_id (Workload Identity Federation) or gcp_authentication (service account key).
 
 
 
@@ -24,14 +24,16 @@ OpenShift Dedicated (OSD) cluster on Google Cloud Platform.
 ### Optional
 
 - `autoscaling` (Attributes) Autoscaling configuration for worker nodes. (see [below for nested schema](#nestedatt--autoscaling))
-- `availability_zones` (List of String) GCP availability zones for the cluster.
+- `availability_zones` (List of String) GCP availability zones for the cluster. Defaults to a single zone when not specified.
+- `billing_model` (String) Billing model for the cluster. For CCS clusters, defaults to 'marketplace-gcp'. Set to 'standard' to use standard billing. Only 'standard' and 'marketplace-gcp' are allowed.
 - `ccs_enabled` (Boolean) Enable Customer Cloud Subscription (CCS) mode.
-- `compute_machine_type` (String) GCP machine type for worker nodes (e.g., custom-4-16384).
+- `compute_machine_type` (String) GCP machine type for worker nodes (e.g., custom-4-16384). Defaults to n2-standard-4 when not specified.
 - `compute_nodes` (Number) Number of worker nodes (when not using autoscaling).
 - `domain_prefix` (String) DNS domain prefix for the cluster.
 - `gcp_authentication` (Attributes) GCP service account authentication (when not using WIF). (see [below for nested schema](#nestedatt--gcp_authentication))
 - `gcp_encryption_key` (Attributes) Customer-managed encryption key (CMEK) for CCS clusters. (see [below for nested schema](#nestedatt--gcp_encryption_key))
 - `gcp_network` (Attributes) GCP network (Shared VPC) configuration. (see [below for nested schema](#nestedatt--gcp_network))
+- `marketplace_gcp_terms` (Boolean) Whether GCP marketplace terms have been accepted.
 - `multi_az` (Boolean) Deploy across multiple availability zones.
 - `network` (Attributes) Network CIDR configuration. (see [below for nested schema](#nestedatt--network))
 - `private_service_connect` (Attributes) Private Service Connect configuration. (see [below for nested schema](#nestedatt--private_service_connect))
@@ -40,9 +42,10 @@ OpenShift Dedicated (OSD) cluster on Google Cloud Platform.
 - `proxy` (Attributes) Proxy configuration. (see [below for nested schema](#nestedatt--proxy))
 - `security` (Attributes) GCP security settings. (see [below for nested schema](#nestedatt--security))
 - `version` (String) OpenShift version (e.g., 4.16.1).
-- `wait_for_create_complete` (Boolean) Wait for cluster to be ready after creation.
-- `wait_timeout` (Number) Timeout in minutes for cluster creation wait.
-- `wif_config_id` (String) ID of the WIF config (when using Workload Identity Federation).
+- `wait_for_create_complete` (Boolean) Wait for cluster to be ready after creation. Defaults to true.
+- `wait_timeout` (Number) Timeout in minutes for cluster create and delete wait. Defaults to 60.
+- `wif_config_id` (String) ID of the WIF config (when using Workload Identity Federation). Best practice: use one WIF config per cluster.
+- `wif_verify_timeout_minutes` (Number) When using wif_config_id, wait up to this many minutes for WIF config verification before creating the cluster. GCP IAM propagation can take several minutes. Default 10.
 
 ### Read-Only
 

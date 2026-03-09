@@ -24,19 +24,20 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	tfprovider "github.com/hashicorp/terraform-plugin-framework/provider"
-	"github.com/redhat/terraform-provider-osd-google/provider/datasources"
+	"github.com/rh-mobb/terraform-provider-osd-google/provider/datasources"
 	tfpschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 
-	"github.com/redhat/terraform-provider-osd-google/build"
-	"github.com/redhat/terraform-provider-osd-google/logging"
-	"github.com/redhat/terraform-provider-osd-google/provider/cluster"
-	"github.com/redhat/terraform-provider-osd-google/provider/cluster_waiter"
-	"github.com/redhat/terraform-provider-osd-google/provider/dns_domain"
-	"github.com/redhat/terraform-provider-osd-google/provider/machine_pool"
-	"github.com/redhat/terraform-provider-osd-google/provider/wif_config"
+	"github.com/rh-mobb/terraform-provider-osd-google/build"
+	"github.com/rh-mobb/terraform-provider-osd-google/logging"
+	"github.com/rh-mobb/terraform-provider-osd-google/provider/cluster"
+	"github.com/rh-mobb/terraform-provider-osd-google/provider/cluster_admin"
+	"github.com/rh-mobb/terraform-provider-osd-google/provider/cluster_waiter"
+	"github.com/rh-mobb/terraform-provider-osd-google/provider/dns_domain"
+	"github.com/rh-mobb/terraform-provider-osd-google/provider/machine_pool"
+	"github.com/rh-mobb/terraform-provider-osd-google/provider/wif_config"
 )
 
 // Provider is the implementation of the OSD Google provider.
@@ -46,13 +47,14 @@ var _ tfprovider.Provider = &Provider{}
 
 // Config contains the configuration of the provider.
 type Config struct {
-	URL        types.String `tfsdk:"url"`
-	TokenURL   types.String `tfsdk:"token_url"`
-	Token      types.String `tfsdk:"token"`
-	ClientID   types.String `tfsdk:"client_id"`
-	ClientSecret types.String `tfsdk:"client_secret"`
-	TrustedCAs types.String `tfsdk:"trusted_cas"`
-	Insecure   types.Bool   `tfsdk:"insecure"`
+	URL              types.String `tfsdk:"url"`
+	TokenURL         types.String `tfsdk:"token_url"`
+	Token            types.String `tfsdk:"token"`
+	ClientID         types.String `tfsdk:"client_id"`
+	ClientSecret     types.String `tfsdk:"client_secret"`
+	TrustedCAs       types.String `tfsdk:"trusted_cas"`
+	Insecure         types.Bool   `tfsdk:"insecure"`
+	OpenshiftVersion types.String `tfsdk:"openshift_version"`
 }
 
 // New creates the provider.
@@ -102,6 +104,10 @@ func (p *Provider) Schema(ctx context.Context, req tfprovider.SchemaRequest, res
 				Description: "When set to 'true' enables insecure communication with the server. " +
 					"This disables verification of TLS certificates and host names. Not recommended for production.",
 				Optional: true,
+			},
+			"openshift_version": tfpschema.StringAttribute{
+				Description: "Default OpenShift version (x.y.z) for cluster and WIF resources. Overridable per resource.",
+				Optional:    true,
 			},
 		},
 	}
@@ -192,6 +198,7 @@ func (p *Provider) Configure(ctx context.Context, req tfprovider.ConfigureReques
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		cluster.New,
+		cluster_admin.New,
 		cluster_waiter.New,
 		dns_domain.New,
 		wif_config.New,

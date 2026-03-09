@@ -23,7 +23,7 @@ import (
 	. "github.com/onsi/gomega"                         // nolint
 	. "github.com/onsi/gomega/ghttp"                   // nolint
 	. "github.com/openshift-online/ocm-sdk-go/testing" // nolint
-	. "github.com/redhat/terraform-provider-osd-google/subsystem/framework"
+	. "github.com/rh-mobb/terraform-provider-osd-google/subsystem/framework"
 )
 
 var _ = Describe("Versions data source", func() {

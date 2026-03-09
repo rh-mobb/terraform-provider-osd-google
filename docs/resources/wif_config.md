@@ -3,12 +3,12 @@
 page_title: "osdgoogle_wif_config Resource - osdgoogle"
 subcategory: ""
 description: |-
-  Workload Identity Federation (WIF) configuration for OSD clusters on GCP.
+  Workload Identity Federation (WIF) configuration for OSD clusters on GCP. Best practice: use one WIF config per cluster. WIF configs are version-specific (openshift_version); one-per-cluster simplifies lifecycle (create/destroy together) and avoids upgrade conflicts when clusters differ in version.
 ---
 
 # osdgoogle_wif_config (Resource)
 
-Workload Identity Federation (WIF) configuration for OSD clusters on GCP.
+Workload Identity Federation (WIF) configuration for OSD clusters on GCP. Best practice: use one WIF config per cluster. WIF configs are version-specific (openshift_version); one-per-cluster simplifies lifecycle (create/destroy together) and avoids upgrade conflicts when clusters differ in version.
 
 
 
@@ -17,8 +17,12 @@ Workload Identity Federation (WIF) configuration for OSD clusters on GCP.
 
 ### Required
 
-- `display_name` (String) Human-readable display name for the WIF config.
+- `display_name` (String) Human-readable display name for the WIF config. Immutable after create.
 - `gcp` (Attributes) GCP-specific WIF configuration. (see [below for nested schema](#nestedatt--gcp))
+
+### Optional
+
+- `openshift_version` (String) OpenShift version (x.y.z) to scope WIF IAM resources. Patch (.z) is stripped for OCM (roles use x.y). When set, OCM returns a version-specific blueprint. Omitted when unset.
 
 ### Read-Only
 
@@ -34,8 +38,99 @@ Required:
 - `project_number` (String) GCP project number for WIF resources.
 - `role_prefix` (String) Prefix for GCP custom role names.
 
-Optional:
+Read-Only:
 
-- `federated_project_id` (String) GCP project ID where WorkloadIdentityPool resources are configured (if different).
-- `federated_project_number` (String) GCP project number for WorkloadIdentityPool.
-- `impersonator_email` (String) Service account email used by OCM to access other service accounts.
+- `federated_project_id` (String) GCP project ID where WorkloadIdentityPool resources are configured (computed by OCM, defaults to project_id).
+- `federated_project_number` (String) GCP project number for WorkloadIdentityPool (computed by OCM).
+- `impersonator_email` (String) Service account email used by OCM to access other service accounts (computed by OCM).
+- `service_accounts` (Attributes List) Service accounts blueprint from OCM (computed). Each entry defines a GCP SA with roles and access method. (see [below for nested schema](#nestedatt--gcp--service_accounts))
+- `support` (Attributes) Support access configuration from OCM (computed). (see [below for nested schema](#nestedatt--gcp--support))
+- `workload_identity_pool` (Attributes) Workload identity pool blueprint from OCM (computed). Use with modules/osd-wif-gcp. (see [below for nested schema](#nestedatt--gcp--workload_identity_pool))
+
+<a id="nestedatt--gcp--service_accounts"></a>
+### Nested Schema for `gcp.service_accounts`
+
+Read-Only:
+
+- `access_method` (String) Access method: impersonate, wif, or vm.
+- `credential_request` (Attributes) OpenShift credential request (namespace and SA names for WIF principals). (see [below for nested schema](#nestedatt--gcp--service_accounts--credential_request))
+- `osd_role` (String) OSD role name.
+- `roles` (Attributes List) IAM roles for this service account. (see [below for nested schema](#nestedatt--gcp--service_accounts--roles))
+- `service_account_id` (String) GCP service account ID.
+
+<a id="nestedatt--gcp--service_accounts--credential_request"></a>
+### Nested Schema for `gcp.service_accounts.credential_request`
+
+Read-Only:
+
+- `namespace` (String) OpenShift namespace for the credential secret.
+- `service_account_names` (List of String) OpenShift service account names that can assume this GCP SA.
+
+
+<a id="nestedatt--gcp--service_accounts--roles"></a>
+### Nested Schema for `gcp.service_accounts.roles`
+
+Read-Only:
+
+- `permissions` (List of String) Permissions for custom roles.
+- `predefined` (Boolean) True if this is a predefined GCP role.
+- `resource_bindings` (Attributes List) Resource-level bindings (target SA for iam.serviceAccountUser etc.). (see [below for nested schema](#nestedatt--gcp--service_accounts--roles--resource_bindings))
+- `role_id` (String) Role ID (predefined or custom).
+
+<a id="nestedatt--gcp--service_accounts--roles--resource_bindings"></a>
+### Nested Schema for `gcp.service_accounts.roles.role_id`
+
+Read-Only:
+
+- `name` (String) Target resource name.
+- `type` (String) Resource type (e.g., iam.serviceAccounts).
+
+
+
+
+<a id="nestedatt--gcp--support"></a>
+### Nested Schema for `gcp.support`
+
+Read-Only:
+
+- `principal` (String) Support group principal (e.g., sd-sre-platform-gcp-access@redhat.com).
+- `roles` (Attributes List) Roles bound to the support group. (see [below for nested schema](#nestedatt--gcp--support--roles))
+
+<a id="nestedatt--gcp--support--roles"></a>
+### Nested Schema for `gcp.support.roles`
+
+Read-Only:
+
+- `permissions` (List of String) Custom role permissions.
+- `predefined` (Boolean) True if predefined.
+- `resource_bindings` (Attributes List) Resource bindings. (see [below for nested schema](#nestedatt--gcp--support--roles--resource_bindings))
+- `role_id` (String) Role ID.
+
+<a id="nestedatt--gcp--support--roles--resource_bindings"></a>
+### Nested Schema for `gcp.support.roles.role_id`
+
+Read-Only:
+
+- `name` (String)
+- `type` (String)
+
+
+
+
+<a id="nestedatt--gcp--workload_identity_pool"></a>
+### Nested Schema for `gcp.workload_identity_pool`
+
+Read-Only:
+
+- `identity_provider` (Attributes) OIDC identity provider configuration for the pool. (see [below for nested schema](#nestedatt--gcp--workload_identity_pool--identity_provider))
+- `pool_id` (String) GCP workload identity pool ID.
+
+<a id="nestedatt--gcp--workload_identity_pool--identity_provider"></a>
+### Nested Schema for `gcp.workload_identity_pool.identity_provider`
+
+Read-Only:
+
+- `allowed_audiences` (List of String) Allowed OIDC audiences.
+- `identity_provider_id` (String) Identity provider ID (e.g., oidc).
+- `issuer_url` (String) OIDC issuer URL.
+- `jwks` (String) JWKS JSON string for token validation.

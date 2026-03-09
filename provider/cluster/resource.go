@@ -20,30 +20,37 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	cmv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 
-	"github.com/redhat/terraform-provider-osd-google/provider/common"
+	"github.com/rh-mobb/terraform-provider-osd-google/provider/common"
 )
 
 const (
-	versionPrefix = "openshift-v"
+	versionPrefix  = "openshift-v"
 	defaultProduct = "osd"
 )
 
 // ClusterResource implements the osdgoogle_cluster resource.
 type ClusterResource struct {
-	collection   *cmv1.ClustersClient
-	clusterWait  common.ClusterWait
-	connection   *sdk.Connection
+	collection  *cmv1.ClustersClient
+	clusterWait common.ClusterWait
+	connection  *sdk.Connection
 }
 
 var _ resource.Resource = &ClusterResource{}
@@ -101,6 +108,10 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"multi_az": schema.BoolAttribute{
 				Description: "Deploy across multiple availability zones.",
 				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"version": schema.StringAttribute{
 				Description: "OpenShift version (e.g., 4.16.1).",
@@ -109,23 +120,54 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"domain_prefix": schema.StringAttribute{
 				Description: "DNS domain prefix for the cluster.",
 				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"ccs_enabled": schema.BoolAttribute{
 				Description: "Enable Customer Cloud Subscription (CCS) mode.",
 				Optional:    true,
 			},
-			"compute_machine_type": schema.StringAttribute{
-				Description: "GCP machine type for worker nodes (e.g., custom-4-16384).",
+			"billing_model": schema.StringAttribute{
+				Description: "Billing model for the cluster. For CCS clusters, defaults to 'marketplace-gcp'. Set to 'standard' to use standard billing. Only 'standard' and 'marketplace-gcp' are allowed.",
 				Optional:    true,
+				Computed:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("standard", "marketplace-gcp"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"marketplace_gcp_terms": schema.BoolAttribute{
+				Description: "Whether GCP marketplace terms have been accepted.",
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"compute_machine_type": schema.StringAttribute{
+				Description: "GCP machine type for worker nodes (e.g., custom-4-16384). Defaults to n2-standard-4 when not specified.",
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"compute_nodes": schema.Int64Attribute{
 				Description: "Number of worker nodes (when not using autoscaling).",
 				Optional:    true,
 			},
 			"availability_zones": schema.ListAttribute{
-				Description: "GCP availability zones for the cluster.",
+				Description: "GCP availability zones for the cluster. Defaults to a single zone when not specified.",
 				ElementType: types.StringType,
 				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"properties": schema.MapAttribute{
 				Description: "Cluster properties.",
@@ -133,15 +175,24 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Optional:    true,
 			},
 			"wif_config_id": schema.StringAttribute{
-				Description: "ID of the WIF config (when using Workload Identity Federation).",
+				Description: "ID of the WIF config (when using Workload Identity Federation). Best practice: use one WIF config per cluster.",
+				Optional:    true,
+			},
+			"wif_verify_timeout_minutes": schema.Int64Attribute{
+				Description: "When using wif_config_id, wait up to this many minutes for WIF config verification before creating the cluster. GCP IAM propagation can take several minutes. Default 10.",
 				Optional:    true,
 			},
 			"wait_for_create_complete": schema.BoolAttribute{
-				Description: "Wait for cluster to be ready after creation.",
+				Description: "Wait for cluster to be ready after creation. Defaults to true.",
 				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"wait_timeout": schema.Int64Attribute{
-				Description: "Timeout in minutes for cluster creation wait.",
+				Description: "Timeout in minutes for cluster create and delete wait. Defaults to 60.",
 				Optional:    true,
 			},
 			"gcp_authentication": schema.SingleNestedAttribute{
@@ -153,9 +204,9 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 					"private_key":                 schema.StringAttribute{Required: true, Sensitive: true},
 					"private_key_id":              schema.StringAttribute{Required: true},
 					"auth_uri":                    schema.StringAttribute{Optional: true},
-					"token_uri":                    schema.StringAttribute{Optional: true},
+					"token_uri":                   schema.StringAttribute{Optional: true},
 					"auth_provider_x509_cert_url": schema.StringAttribute{Optional: true},
-					"client_x509_cert_url":         schema.StringAttribute{Optional: true},
+					"client_x509_cert_url":        schema.StringAttribute{Optional: true},
 					"type":                        schema.StringAttribute{Optional: true},
 				},
 			},
@@ -181,9 +232,9 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
 					"kms_key_service_account": schema.StringAttribute{Required: true},
-					"key_location":             schema.StringAttribute{Required: true},
-					"key_name":                 schema.StringAttribute{Required: true},
-					"key_ring":                 schema.StringAttribute{Required: true},
+					"key_location":            schema.StringAttribute{Required: true},
+					"key_name":                schema.StringAttribute{Required: true},
+					"key_ring":                schema.StringAttribute{Required: true},
 				},
 			},
 			"security": schema.SingleNestedAttribute{
@@ -199,8 +250,8 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Attributes: map[string]schema.Attribute{
 					"machine_cidr": schema.StringAttribute{Optional: true},
 					"service_cidr": schema.StringAttribute{Optional: true},
-					"pod_cidr":    schema.StringAttribute{Optional: true},
-					"host_prefix": schema.Int64Attribute{Optional: true},
+					"pod_cidr":     schema.StringAttribute{Optional: true},
+					"host_prefix":  schema.Int64Attribute{Optional: true},
 				},
 			},
 			"autoscaling": schema.SingleNestedAttribute{
@@ -273,7 +324,7 @@ func (r *ClusterResource) Configure(ctx context.Context, req resource.ConfigureR
 	}
 	conn, ok := req.ProviderData.(*sdk.Connection)
 	if !ok {
-		resp.Diagnostics.AddError("unexpected provider data type", fmt.Sprintf("expected *sdk.Connection, got %T", req.ProviderData))
+		resp.Diagnostics.AddError("Unexpected Resource Configure Type", fmt.Sprintf("Expected *sdk.Connection, got: %T. Please report this issue to the provider developers.", req.ProviderData))
 		return
 	}
 	r.connection = conn
@@ -299,6 +350,34 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 			)
 			return
 		}
+	}
+
+	// When using WIF, wait for OCM to verify the GCP resources before cluster creation.
+	// GCP IAM is eventually consistent; cluster creation fails with 503 until verification succeeds.
+	if wifID := plan.WIFConfigID.ValueString(); wifID != "" {
+		timeoutMin := plan.WifVerifyTimeoutMinutes.ValueInt64()
+		if timeoutMin <= 0 {
+			timeoutMin = 10
+		}
+		tflog.Info(ctx, fmt.Sprintf("Waiting for WIF config %s to be verified (timeout %d min)", wifID, timeoutMin))
+		statusClient := r.connection.ClustersMgmt().V1().GCP().WifConfigs().WifConfig(wifID).Status()
+		pollCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutMin)*time.Minute)
+		defer cancel()
+		_, err := statusClient.Poll().
+			Interval(30 * time.Second).
+			Predicate(func(resp *cmv1.WifConfigStatusGetResponse) bool {
+				body := resp.Body()
+				return body != nil && body.Configured()
+			}).
+			StartContext(pollCtx)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"WIF config not ready",
+				fmt.Sprintf("Timed out waiting for WIF config %s to be verified. GCP IAM propagation can take several minutes. Run 'ocm gcp verify wif-config %s' to check status, or increase wif_verify_timeout_minutes.", wifID, wifID),
+			)
+			return
+		}
+		tflog.Info(ctx, "WIF config verified, proceeding with cluster creation")
 	}
 
 	clusterObj, err := r.buildClusterObject(ctx, &plan)
@@ -352,7 +431,7 @@ func (r *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 	getResp, err := r.collection.Cluster(state.ID.ValueString()).Get().SendContext(ctx)
 	if err != nil {
 		if getResp != nil && getResp.Status() == http.StatusNotFound {
-			resp.State.RemoveResource(ctx)
+			common.HandleNotFound(ctx, resp, "cluster", state.ID.ValueString())
 			return
 		}
 		resp.Diagnostics.AddError("failed to get cluster", err.Error())
@@ -416,6 +495,16 @@ func (r *ClusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		resp.Diagnostics.AddError("failed to delete cluster", err.Error())
 		return
 	}
+
+	timeout := int64(60)
+	if state.WaitTimeout.ValueInt64() > 0 {
+		timeout = state.WaitTimeout.ValueInt64()
+	}
+	if err := r.clusterWait.WaitForClusterToBeDeleted(ctx, state.ID.ValueString(), timeout); err != nil {
+		resp.Diagnostics.AddError("cluster deletion wait failed", err.Error())
+		return
+	}
+
 	resp.State.RemoveResource(ctx)
 }
 
@@ -446,31 +535,49 @@ func (r *ClusterResource) buildClusterObject(ctx context.Context, s *ClusterStat
 	ccsEnabled := s.CCSEnabled.ValueBool()
 	builder.CCS(cmv1.NewCCS().Enabled(ccsEnabled))
 
-	if s.GCPProjectID.ValueString() != "" {
-		gcpBuilder := cmv1.NewGCP().ProjectID(s.GCPProjectID.ValueString())
+	if ccsEnabled {
+		bm := cmv1.BillingModelMarketplaceGCP
+		if common.HasValue(s.BillingModel) && s.BillingModel.ValueString() == "standard" {
+			bm = cmv1.BillingModelStandard
+		}
+		builder.BillingModel(bm)
+	}
+
+	if s.GCPProjectID.ValueString() != "" || common.HasValue(s.WIFConfigID) {
+		gcpBuilder := cmv1.NewGCP()
 
 		if common.HasValue(s.WIFConfigID) {
-			gcpBuilder.Authentication(cmv1.NewGcpAuthentication().Id(s.WIFConfigID.ValueString()))
-		} else if s.GCPAuthentication != nil {
-			auth := s.GCPAuthentication
-			gcpBuilder.ClientEmail(auth.ClientEmail.ValueString()).
-				ClientID(auth.ClientID.ValueString()).
-				PrivateKey(auth.PrivateKey.ValueString()).
-				PrivateKeyID(auth.PrivateKeyID.ValueString())
-			if common.HasValue(auth.AuthURI) {
-				gcpBuilder.AuthURI(auth.AuthURI.ValueString())
+			// WIF clusters must not include project_id in the GCP body.
+			gcpBuilder.Authentication(
+				cmv1.NewGcpAuthentication().
+					Kind(cmv1.WifConfigKind).
+					Id(s.WIFConfigID.ValueString()),
+			)
+		} else {
+			if s.GCPProjectID.ValueString() != "" {
+				gcpBuilder.ProjectID(s.GCPProjectID.ValueString())
 			}
-			if common.HasValue(auth.TokenURI) {
-				gcpBuilder.TokenURI(auth.TokenURI.ValueString())
-			}
-			if common.HasValue(auth.AuthProviderX509CertURL) {
-				gcpBuilder.AuthProviderX509CertURL(auth.AuthProviderX509CertURL.ValueString())
-			}
-			if common.HasValue(auth.ClientX509CertURL) {
-				gcpBuilder.ClientX509CertURL(auth.ClientX509CertURL.ValueString())
-			}
-			if common.HasValue(auth.Type) {
-				gcpBuilder.Type(auth.Type.ValueString())
+			if s.GCPAuthentication != nil {
+				auth := s.GCPAuthentication
+				gcpBuilder.ClientEmail(auth.ClientEmail.ValueString()).
+					ClientID(auth.ClientID.ValueString()).
+					PrivateKey(auth.PrivateKey.ValueString()).
+					PrivateKeyID(auth.PrivateKeyID.ValueString())
+				if common.HasValue(auth.AuthURI) {
+					gcpBuilder.AuthURI(auth.AuthURI.ValueString())
+				}
+				if common.HasValue(auth.TokenURI) {
+					gcpBuilder.TokenURI(auth.TokenURI.ValueString())
+				}
+				if common.HasValue(auth.AuthProviderX509CertURL) {
+					gcpBuilder.AuthProviderX509CertURL(auth.AuthProviderX509CertURL.ValueString())
+				}
+				if common.HasValue(auth.ClientX509CertURL) {
+					gcpBuilder.ClientX509CertURL(auth.ClientX509CertURL.ValueString())
+				}
+				if common.HasValue(auth.Type) {
+					gcpBuilder.Type(auth.Type.ValueString())
+				}
 			}
 		}
 
@@ -619,18 +726,33 @@ func (r *ClusterResource) populateState(ctx context.Context, cluster *cmv1.Clust
 	state.State = types.StringValue(string(cluster.State()))
 	if cluster.DNS() != nil {
 		state.Domain = types.StringValue(fmt.Sprintf("%s.%s", cluster.DomainPrefix(), cluster.DNS().BaseDomain()))
+	} else {
+		state.Domain = types.StringValue("")
 	}
 	state.InfraID = types.StringValue(cluster.InfraID())
 
 	if cluster.API() != nil {
 		state.APIURL = types.StringValue(cluster.API().URL())
+	} else {
+		state.APIURL = types.StringValue("")
 	}
 	if cluster.Console() != nil {
 		state.ConsoleURL = types.StringValue(cluster.Console().URL())
+	} else {
+		state.ConsoleURL = types.StringValue("")
 	}
 	if cluster.Status() != nil {
 		state.CurrentCompute = types.Int64Value(int64(cluster.Status().CurrentCompute()))
+	} else {
+		state.CurrentCompute = types.Int64Value(0)
 	}
+
+	if value, ok := cluster.GetBillingModel(); ok && string(value) != "" {
+		state.BillingModel = types.StringValue(string(value))
+	} else {
+		state.BillingModel = types.StringValue("")
+	}
+	state.MarketplaceGCPTerms = types.BoolValue(false)
 
 	if cluster.Nodes() != nil {
 		state.ComputeNodes = types.Int64Value(int64(cluster.Nodes().Compute()))

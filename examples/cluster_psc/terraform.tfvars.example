@@ -1,0 +1,14 @@
+# OCM offline token or access token (required)
+#ocm_token = "your-token"
+
+# GCP project ID for the cluster (required)
+gcp_project_id = "my-gcp-project"
+
+# GCP project number, numeric (required)
+gcp_project_number = "123456789012"
+
+# Subnet name or CIDR for PSC service attachment (required)
+psc_subnet = "psc-subnet"
+
+# Name of the OSD cluster
+cluster_name = "my-psc-cluster"

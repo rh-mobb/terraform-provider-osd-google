@@ -1,0 +1,17 @@
+# GCP project ID for the cluster (required)
+gcp_project_id = "my-gcp-project"
+
+# Name of the OSD cluster
+cluster_name = "my-vpc-cluster"
+
+# GCP region for the cluster and VPC
+gcp_region = "us-central1"
+
+# Enable Private Service Connect for private cluster (requires OpenShift 4.17+)
+enable_psc = false
+
+# OCM token: use environment variable
+# export OSDGOOGLE_TOKEN="your-token"
+
+# GCP: use Application Default Credentials
+# gcloud auth application-default login
