@@ -57,13 +57,13 @@ resource "osdgoogle_cluster" "cluster" {
 
   name                 = var.cluster_name
   cloud_region         = var.gcp_region
-  gcp_project_id      = var.gcp_project_id
-  version             = var.openshift_version
-  wif_config_id       = data.osdgoogle_wif_config.wif.id
-  compute_nodes       = var.compute_nodes
+  gcp_project_id       = var.gcp_project_id
+  version              = var.openshift_version
+  wif_config_id        = data.osdgoogle_wif_config.wif.id
+  compute_nodes        = var.compute_nodes
   compute_machine_type = var.compute_machine_type
   availability_zones   = [var.availability_zone]
-  ccs_enabled         = true
+  ccs_enabled          = true
 
   lifecycle {
     precondition {

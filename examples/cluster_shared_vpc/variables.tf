@@ -50,17 +50,17 @@ variable "machine_pools" {
     min_replicas        = optional(number)
     max_replicas        = optional(number)
     replicas            = optional(number)
-    availability_zones = optional(list(string))
+    availability_zones  = optional(list(string))
     labels              = optional(map(string), {})
-    taints              = optional(list(object({
-      key   = string
-      value = string
+    taints = optional(list(object({
+      key    = string
+      value  = string
       effect = string
     })), [])
     root_volume_size = optional(number)
     secure_boot      = optional(bool, false)
   }))
-  default = []
+  default     = []
   description = "Additional machine pools. If autoscaling_enabled = true, set min_replicas and max_replicas. If false, set replicas."
 
   validation {

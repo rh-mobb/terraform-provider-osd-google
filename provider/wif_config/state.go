@@ -22,9 +22,9 @@ import (
 
 // WifConfigState holds the Terraform state for a WIF config.
 type WifConfigState struct {
-	ID             types.String `tfsdk:"id"`
-	DisplayName    types.String `tfsdk:"display_name"`
-	Organization   types.String `tfsdk:"organization"`
+	ID               types.String `tfsdk:"id"`
+	DisplayName      types.String `tfsdk:"display_name"`
+	Organization     types.String `tfsdk:"organization"`
 	OpenshiftVersion types.String `tfsdk:"openshift_version"`
 
 	GCP *WifGcpState `tfsdk:"gcp"`
@@ -32,15 +32,15 @@ type WifConfigState struct {
 
 // WifGcpState holds the GCP-specific WIF configuration.
 type WifGcpState struct {
-	ProjectID              types.String   `tfsdk:"project_id"`
-	ProjectNumber          types.String   `tfsdk:"project_number"`
-	RolePrefix             types.String   `tfsdk:"role_prefix"`
-	FederatedProjectID     types.String   `tfsdk:"federated_project_id"`
-	FederatedProjectNumber types.String   `tfsdk:"federated_project_number"`
-	ImpersonatorEmail      types.String   `tfsdk:"impersonator_email"`
-	WorkloadIdentityPool   types.Object   `tfsdk:"workload_identity_pool"`
-	ServiceAccounts        types.List     `tfsdk:"service_accounts"`
-	Support                types.Object   `tfsdk:"support"`
+	ProjectID              types.String `tfsdk:"project_id"`
+	ProjectNumber          types.String `tfsdk:"project_number"`
+	RolePrefix             types.String `tfsdk:"role_prefix"`
+	FederatedProjectID     types.String `tfsdk:"federated_project_id"`
+	FederatedProjectNumber types.String `tfsdk:"federated_project_number"`
+	ImpersonatorEmail      types.String `tfsdk:"impersonator_email"`
+	WorkloadIdentityPool   types.Object `tfsdk:"workload_identity_pool"`
+	ServiceAccounts        types.List   `tfsdk:"service_accounts"`
+	Support                types.Object `tfsdk:"support"`
 }
 
 // WifPoolState holds the workload identity pool configuration from OCM.
@@ -68,10 +68,10 @@ type WifServiceAccountState struct {
 
 // WifRoleState holds a role definition from the OCM blueprint.
 type WifRoleState struct {
-	RoleId           types.String              `tfsdk:"role_id"`
-	Predefined       types.Bool                `tfsdk:"predefined"`
-	Permissions      types.List                `tfsdk:"permissions"`
-	ResourceBindings types.List                `tfsdk:"resource_bindings"`
+	RoleId           types.String `tfsdk:"role_id"`
+	Predefined       types.Bool   `tfsdk:"predefined"`
+	Permissions      types.List   `tfsdk:"permissions"`
+	ResourceBindings types.List   `tfsdk:"resource_bindings"`
 }
 
 // WifResourceBindingState holds a resource binding for a role.

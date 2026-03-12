@@ -24,11 +24,11 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	tfprovider "github.com/hashicorp/terraform-plugin-framework/provider"
-	"github.com/rh-mobb/terraform-provider-osd-google/provider/datasources"
 	tfpschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sdk "github.com/openshift-online/ocm-sdk-go"
+	"github.com/rh-mobb/terraform-provider-osd-google/provider/datasources"
 
 	"github.com/rh-mobb/terraform-provider-osd-google/build"
 	"github.com/rh-mobb/terraform-provider-osd-google/logging"

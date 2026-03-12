@@ -109,8 +109,8 @@ func (d *RegionsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 }
 
 type RegionsState struct {
-	GCPProjectID types.String  `tfsdk:"gcp_project_id"`
-	Items        []RegionItem  `tfsdk:"items"`
+	GCPProjectID types.String `tfsdk:"gcp_project_id"`
+	Items        []RegionItem `tfsdk:"items"`
 }
 
 type RegionItem struct {

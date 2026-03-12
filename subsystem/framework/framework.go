@@ -26,9 +26,9 @@ import (
 	"strings"
 	"testing"
 
+	. "github.com/onsi/ginkgo/v2/dsl/core" // nolint
+	. "github.com/onsi/gomega"             // nolint
 	"github.com/onsi/gomega/ghttp"
-	. "github.com/onsi/ginkgo/v2/dsl/core"             // nolint
-	. "github.com/onsi/gomega"                         // nolint
 	. "github.com/openshift-online/ocm-sdk-go/testing" // nolint
 )
 

@@ -27,7 +27,7 @@ resource "google_compute_global_forwarding_rule" "psc" {
   target                = "all-apis"
   network               = google_compute_network.vpc.id
   ip_address            = google_compute_global_address.psc[0].id
-  load_balancing_scheme  = ""
+  load_balancing_scheme = ""
   project               = var.project_id
 }
 

@@ -22,8 +22,8 @@ import (
 
 // ClusterAdminState holds the Terraform state for a cluster admin resource.
 type ClusterAdminState struct {
-	ID         types.String `tfsdk:"id"`
-	ClusterID   types.String `tfsdk:"cluster_id"`
-	Username types.String `tfsdk:"username"`
-	Password types.String `tfsdk:"password"`
+	ID        types.String `tfsdk:"id"`
+	ClusterID types.String `tfsdk:"cluster_id"`
+	Username  types.String `tfsdk:"username"`
+	Password  types.String `tfsdk:"password"`
 }

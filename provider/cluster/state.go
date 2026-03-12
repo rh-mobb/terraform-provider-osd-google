@@ -22,7 +22,7 @@ import (
 
 // ClusterState holds the Terraform state for an OSD cluster on GCP.
 type ClusterState struct {
-	ID        types.String `tfsdk:"id"`
+	ID         types.String `tfsdk:"id"`
 	ExternalID types.String `tfsdk:"external_id"`
 
 	Name         types.String `tfsdk:"name"`
@@ -31,20 +31,20 @@ type ClusterState struct {
 	Product      types.String `tfsdk:"product"`
 	MultiAZ      types.Bool   `tfsdk:"multi_az"`
 
-	Version       types.String `tfsdk:"version"`
-	DomainPrefix  types.String `tfsdk:"domain_prefix"`
-	CCSEnabled    types.Bool   `tfsdk:"ccs_enabled"`
+	Version      types.String `tfsdk:"version"`
+	DomainPrefix types.String `tfsdk:"domain_prefix"`
+	CCSEnabled   types.Bool   `tfsdk:"ccs_enabled"`
 
-	BillingModel         types.String `tfsdk:"billing_model"`
-	MarketplaceGCPTerms  types.Bool   `tfsdk:"marketplace_gcp_terms"`
+	BillingModel        types.String `tfsdk:"billing_model"`
+	MarketplaceGCPTerms types.Bool   `tfsdk:"marketplace_gcp_terms"`
 
 	ComputeMachineType types.String `tfsdk:"compute_machine_type"`
-	ComputeNodes      types.Int64  `tfsdk:"compute_nodes"`
-	AvailabilityZones types.List   `tfsdk:"availability_zones"`
-	Properties        types.Map    `tfsdk:"properties"`
+	ComputeNodes       types.Int64  `tfsdk:"compute_nodes"`
+	AvailabilityZones  types.List   `tfsdk:"availability_zones"`
+	Properties         types.Map    `tfsdk:"properties"`
 
-	WIFConfigID types.String `tfsdk:"wif_config_id"`
-	WifVerifyTimeoutMinutes types.Int64 `tfsdk:"wif_verify_timeout_minutes"`
+	WIFConfigID             types.String `tfsdk:"wif_config_id"`
+	WifVerifyTimeoutMinutes types.Int64  `tfsdk:"wif_verify_timeout_minutes"`
 
 	WaitForCreateComplete types.Bool  `tfsdk:"wait_for_create_complete"`
 	WaitTimeout           types.Int64 `tfsdk:"wait_timeout"`
@@ -84,15 +84,15 @@ type ClusterState struct {
 
 // GCPAuthenticationState holds service account key auth (used when not using WIF).
 type GCPAuthenticationState struct {
-	ClientEmail                types.String `tfsdk:"client_email"`
-	ClientID                   types.String `tfsdk:"client_id"`
-	PrivateKey                 types.String `tfsdk:"private_key"`
-	PrivateKeyID               types.String `tfsdk:"private_key_id"`
-	AuthURI                    types.String `tfsdk:"auth_uri"`
-	TokenURI                   types.String `tfsdk:"token_uri"`
-	AuthProviderX509CertURL    types.String `tfsdk:"auth_provider_x509_cert_url"`
-	ClientX509CertURL          types.String `tfsdk:"client_x509_cert_url"`
-	Type                       types.String `tfsdk:"type"`
+	ClientEmail             types.String `tfsdk:"client_email"`
+	ClientID                types.String `tfsdk:"client_id"`
+	PrivateKey              types.String `tfsdk:"private_key"`
+	PrivateKeyID            types.String `tfsdk:"private_key_id"`
+	AuthURI                 types.String `tfsdk:"auth_uri"`
+	TokenURI                types.String `tfsdk:"token_uri"`
+	AuthProviderX509CertURL types.String `tfsdk:"auth_provider_x509_cert_url"`
+	ClientX509CertURL       types.String `tfsdk:"client_x509_cert_url"`
+	Type                    types.String `tfsdk:"type"`
 }
 
 // PrivateServiceConnectState holds PSC configuration.
@@ -102,10 +102,10 @@ type PrivateServiceConnectState struct {
 
 // GCPNetworkState holds Shared VPC configuration.
 type GCPNetworkState struct {
-	VPCName             types.String `tfsdk:"vpc_name"`
-	VPCProjectID        types.String `tfsdk:"vpc_project_id"`
-	ComputeSubnet       types.String `tfsdk:"compute_subnet"`
-	ControlPlaneSubnet  types.String `tfsdk:"control_plane_subnet"`
+	VPCName            types.String `tfsdk:"vpc_name"`
+	VPCProjectID       types.String `tfsdk:"vpc_project_id"`
+	ComputeSubnet      types.String `tfsdk:"compute_subnet"`
+	ControlPlaneSubnet types.String `tfsdk:"control_plane_subnet"`
 }
 
 // GCPEncryptionKeyState holds CMEK configuration.
@@ -137,8 +137,8 @@ type AutoscalingState struct {
 
 // ProxyState holds proxy configuration.
 type ProxyState struct {
-	HTTPProxy            types.String `tfsdk:"http_proxy"`
-	HTTPSProxy           types.String `tfsdk:"https_proxy"`
-	NoProxy              types.String `tfsdk:"no_proxy"`
+	HTTPProxy             types.String `tfsdk:"http_proxy"`
+	HTTPSProxy            types.String `tfsdk:"https_proxy"`
+	NoProxy               types.String `tfsdk:"no_proxy"`
 	AdditionalTrustBundle types.String `tfsdk:"additional_trust_bundle"`
 }

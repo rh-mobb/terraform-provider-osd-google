@@ -89,7 +89,8 @@ WIF_CONFIG_DIR := terraform/wif_config
 # Inferred defaults (override with: make example.cluster.apply GCP_PROJECT_ID=my-proj CLUSTER_NAME=my-cluster)
 GCP_PROJECT_ID ?= $(shell gcloud config get-value project 2>/dev/null)
 CLUSTER_NAME ?= $(shell echo "$${USER:-$$(whoami)}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$$//')
-TF_VARS := -var="gcp_project_id=$(GCP_PROJECT_ID)" -var="cluster_name=$(CLUSTER_NAME)"
+# Lazily evaluated so gcloud/whoami don't run during Makefile parse
+TF_VARS = -var="gcp_project_id=$(GCP_PROJECT_ID)" -var="cluster_name=$(CLUSTER_NAME)"
 EXTRA_TF_VARS ?=
 
 # Per-example targets: each handles the full WIF + cluster lifecycle.
@@ -105,28 +106,28 @@ example.$(1).init:
 	@cd examples/$(1) && terraform init -upgrade
 
 example.$(1).plan: example.$(1).init
-	@[ -n "$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
-	@echo "Planning WIF config (project=$(GCP_PROJECT_ID), cluster_name=$(CLUSTER_NAME))..."
-	@cd $(WIF_CONFIG_DIR) && terraform plan $(TF_VARS)
+	@[ -n "$$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
+	@echo "Planning WIF config (project=$$(GCP_PROJECT_ID), cluster_name=$$(CLUSTER_NAME))..."
+	@cd $(WIF_CONFIG_DIR) && terraform plan $$(TF_VARS)
 	@echo ""
 	@echo "Planning examples/$(1)..."
-	@cd examples/$(1) && terraform plan $(TF_VARS) $(EXTRA_TF_VARS)
+	@cd examples/$(1) && terraform plan $$(TF_VARS) $$(EXTRA_TF_VARS)
 
 example.$(1).apply: example.$(1).init
-	@[ -n "$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
-	@echo "Step 1: Creating WIF config in OCM (project=$(GCP_PROJECT_ID), cluster_name=$(CLUSTER_NAME))..."
-	@cd $(WIF_CONFIG_DIR) && terraform apply -auto-approve $(TF_VARS)
+	@[ -n "$$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
+	@echo "Step 1: Creating WIF config in OCM (project=$$(GCP_PROJECT_ID), cluster_name=$$(CLUSTER_NAME))..."
+	@cd $(WIF_CONFIG_DIR) && terraform apply -auto-approve $$(TF_VARS)
 	@echo ""
 	@echo "Step 2: Applying examples/$(1)..."
-	@cd examples/$(1) && terraform apply -auto-approve $(TF_VARS) $(EXTRA_TF_VARS)
+	@cd examples/$(1) && terraform apply -auto-approve $$(TF_VARS) $$(EXTRA_TF_VARS)
 
 example.$(1).destroy: example.$(1).init
-	@[ -n "$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
+	@[ -n "$$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
 	@echo "Step 1: Destroying examples/$(1)..."
-	@cd examples/$(1) && terraform destroy -auto-approve $(TF_VARS) $(EXTRA_TF_VARS)
+	@cd examples/$(1) && terraform destroy -auto-approve $$(TF_VARS) $$(EXTRA_TF_VARS)
 	@echo ""
 	@echo "Step 2: Destroying WIF config..."
-	@cd $(WIF_CONFIG_DIR) && terraform destroy -auto-approve $(TF_VARS)
+	@cd $(WIF_CONFIG_DIR) && terraform destroy -auto-approve $$(TF_VARS)
 endef
 $(foreach ex,$(EXAMPLES),$(eval $(call example-targets,$(ex))))
 
@@ -142,28 +143,28 @@ dev.$(1).init: install
 	@cd examples/$(1) && terraform init -upgrade
 
 dev.$(1).plan: dev.$(1).init
-	@[ -n "$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
+	@[ -n "$$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
 	@echo "Planning WIF config (dev)..."
-	@cd $(WIF_CONFIG_DIR) && terraform plan $(TF_VARS)
+	@cd $(WIF_CONFIG_DIR) && terraform plan $$(TF_VARS)
 	@echo ""
 	@echo "Planning examples/$(1) (dev)..."
-	@cd examples/$(1) && terraform plan $(TF_VARS) $(EXTRA_TF_VARS)
+	@cd examples/$(1) && terraform plan $$(TF_VARS) $$(EXTRA_TF_VARS)
 
 dev.$(1).apply: dev.$(1).init
-	@[ -n "$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
+	@[ -n "$$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
 	@echo "Step 1: Creating WIF config in OCM (dev)..."
-	@cd $(WIF_CONFIG_DIR) && terraform apply -auto-approve $(TF_VARS)
+	@cd $(WIF_CONFIG_DIR) && terraform apply -auto-approve $$(TF_VARS)
 	@echo ""
 	@echo "Step 2: Applying examples/$(1) (dev)..."
-	@cd examples/$(1) && terraform apply -auto-approve $(TF_VARS) $(EXTRA_TF_VARS)
+	@cd examples/$(1) && terraform apply -auto-approve $$(TF_VARS) $$(EXTRA_TF_VARS)
 
 dev.$(1).destroy: dev.$(1).init
-	@[ -n "$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
+	@[ -n "$$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
 	@echo "Step 1: Destroying examples/$(1) (dev)..."
-	@cd examples/$(1) && terraform destroy -auto-approve $(TF_VARS) $(EXTRA_TF_VARS)
+	@cd examples/$(1) && terraform destroy -auto-approve $$(TF_VARS) $$(EXTRA_TF_VARS)
 	@echo ""
 	@echo "Step 2: Destroying WIF config (dev)..."
-	@cd $(WIF_CONFIG_DIR) && terraform destroy -auto-approve $(TF_VARS)
+	@cd $(WIF_CONFIG_DIR) && terraform destroy -auto-approve $$(TF_VARS)
 endef
 $(foreach ex,$(EXAMPLES),$(eval $(call dev-targets,$(ex))))
 
@@ -243,7 +244,7 @@ check-gen: generate
 
 .PHONY: tools
 tools:
-	go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.2
+	go install github.com/onsi/ginkgo/v2/ginkgo@v2.17.1
 	go install go.uber.org/mock/mockgen@v0.3.0
 	go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.16.0
 

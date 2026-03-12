@@ -39,8 +39,8 @@ type ClusterWait interface {
 
 // DefaultClusterWait implements ClusterWait using the OCM clusters client.
 type DefaultClusterWait struct {
-	collection  *cmv1.ClustersClient
-	connection  *sdk.Connection
+	collection *cmv1.ClustersClient
+	connection *sdk.Connection
 }
 
 // NewClusterWait creates a new ClusterWait implementation.

@@ -215,8 +215,8 @@ func (d *WifConfigDataSource) Schema(ctx context.Context, req datasource.SchemaR
 								Computed:    true,
 								NestedObject: schema.NestedAttributeObject{
 									Attributes: map[string]schema.Attribute{
-										"role_id":    schema.StringAttribute{Description: "Role ID.", Computed: true},
-										"predefined": schema.BoolAttribute{Description: "True if predefined.", Computed: true},
+										"role_id":     schema.StringAttribute{Description: "Role ID.", Computed: true},
+										"predefined":  schema.BoolAttribute{Description: "True if predefined.", Computed: true},
 										"permissions": schema.ListAttribute{Description: "Custom role permissions.", Computed: true, ElementType: types.StringType},
 										"resource_bindings": schema.ListNestedAttribute{
 											Description: "Resource bindings.",

@@ -31,23 +31,23 @@ variable "admin_password" {
 
 variable "machine_pools" {
   type = list(object({
-    name               = string
-    instance_type      = string
+    name                = string
+    instance_type       = string
     autoscaling_enabled = optional(bool, true)
-    min_replicas       = optional(number) # When autoscaling_enabled = true
-    max_replicas       = optional(number) # When autoscaling_enabled = true
-    replicas           = optional(number) # When autoscaling_enabled = false
-    availability_zones = optional(list(string))
-    labels             = optional(map(string), {})
-    taints             = optional(list(object({
-      key   = string
-      value = string
+    min_replicas        = optional(number) # When autoscaling_enabled = true
+    max_replicas        = optional(number) # When autoscaling_enabled = true
+    replicas            = optional(number) # When autoscaling_enabled = false
+    availability_zones  = optional(list(string))
+    labels              = optional(map(string), {})
+    taints = optional(list(object({
+      key    = string
+      value  = string
       effect = string
     })), [])
     root_volume_size = optional(number)
     secure_boot      = optional(bool, false)
   }))
-  default = []
+  default     = []
   description = "Additional machine pools beyond the default worker pool. If autoscaling_enabled = true, set min_replicas and max_replicas. If false, set replicas. Names 'worker' and 'workers-*' are reserved."
 
   validation {

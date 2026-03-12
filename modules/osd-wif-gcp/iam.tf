@@ -37,10 +37,10 @@ locals {
     for sa in var.service_accounts : [
       for r in sa.roles : [
         for b in coalesce(r.resource_bindings, []) : {
-          target_sa  = b.name
-          member_sa   = sa.service_account_id
-          role_id     = r.role_id
-          predefined  = r.predefined
+          target_sa    = b.name
+          member_sa    = sa.service_account_id
+          role_id      = r.role_id
+          predefined   = r.predefined
           binding_type = b.type
         } if b.type == "iam.serviceAccounts"
       ]
@@ -76,8 +76,8 @@ resource "google_project_iam_member" "sa_roles" {
   }
 
   project = var.project_id
-  role = each.value.predefined ? "roles/${each.value.role_id}" : google_project_iam_custom_role.wif[each.value.role_id].id
-  member = "serviceAccount:${local.sa_email[each.value.sa_id]}"
+  role    = each.value.predefined ? "roles/${each.value.role_id}" : google_project_iam_custom_role.wif[each.value.role_id].id
+  member  = "serviceAccount:${local.sa_email[each.value.sa_id]}"
 }
 
 # Impersonator access (serviceAccountTokenCreator) for SAs with access_method=impersonate

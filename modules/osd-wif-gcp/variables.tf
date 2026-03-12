@@ -29,16 +29,16 @@ variable "service_accounts" {
     access_method      = string
     osd_role           = string
     roles = list(object({
-      role_id           = string
-      predefined        = bool
-      permissions       = list(string)
+      role_id     = string
+      predefined  = bool
+      permissions = list(string)
       resource_bindings = optional(list(object({
         type = string
         name = string
       })), [])
     }))
     credential_request = optional(object({
-      namespace            = string
+      namespace             = string
       service_account_names = list(string)
     }), null)
   }))
@@ -50,9 +50,9 @@ variable "support" {
   type = object({
     principal = string
     roles = list(object({
-      role_id           = string
-      predefined        = bool
-      permissions       = list(string)
+      role_id     = string
+      predefined  = bool
+      permissions = list(string)
       resource_bindings = optional(list(object({
         type = string
         name = string

@@ -39,10 +39,10 @@ import (
 
 const (
 	defaultClusterAdminUsername = "admin"
-	clusterAdminsGroupID       = "cluster-admins"
-	htpasswdIDPName            = "htpasswd"
-	defaultWaitTimeoutMinutes  = 60
-	passwordLength             = 23
+	clusterAdminsGroupID        = "cluster-admins"
+	htpasswdIDPName             = "htpasswd"
+	defaultWaitTimeoutMinutes   = 60
+	passwordLength              = 23
 )
 
 // ClusterAdminResource implements the osdgoogle_cluster_admin resource.

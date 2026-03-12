@@ -22,10 +22,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -102,8 +102,8 @@ func (r *MachinePoolResource) Schema(ctx context.Context, req resource.SchemaReq
 				Optional:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"key":   schema.StringAttribute{Required: true},
-						"value": schema.StringAttribute{Required: true},
+						"key":    schema.StringAttribute{Required: true},
+						"value":  schema.StringAttribute{Required: true},
 						"effect": schema.StringAttribute{Required: true},
 					},
 				},
@@ -403,6 +403,9 @@ func (r *MachinePoolResource) populateState(obj *cmv1.MachinePool, state *Machin
 	if obj.AvailabilityZones() != nil && len(obj.AvailabilityZones()) > 0 {
 		azList, _ := types.ListValueFrom(context.Background(), types.StringType, obj.AvailabilityZones())
 		state.AvailabilityZones = azList
+	} else {
+		// Optional+Computed: must return a known value after apply. Use empty list when API returns nil/empty.
+		state.AvailabilityZones = types.ListValueMust(types.StringType, []attr.Value{})
 	}
 	if obj.Labels() != nil && len(obj.Labels()) > 0 {
 		labelMap, _ := types.MapValueFrom(context.Background(), types.StringType, obj.Labels())

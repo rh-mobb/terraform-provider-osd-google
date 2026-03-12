@@ -60,7 +60,7 @@ resource "osdgoogle_cluster" "cluster" {
 
   gcp_network = {
     vpc_name             = module.osd_vpc.vpc_name
-    control_plane_subnet  = module.osd_vpc.control_plane_subnet
+    control_plane_subnet = module.osd_vpc.control_plane_subnet
     compute_subnet       = module.osd_vpc.compute_subnet
   }
 }
