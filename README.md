@@ -180,7 +180,7 @@ output "console_url" {
 }
 ```
 
-CCS clusters (your own GCP project) require `wif_config_id` or `gcp_authentication`—see [cluster](examples/cluster) for an example.
+CCS clusters (your own GCP project) require `wif_config_id` or `gcp_authentication`. Create the WIF config in OCM using [`terraform/wif_config/`](terraform/wif_config/README.md) before provisioning a cluster — see [cluster](examples/cluster) for an example.
 
 ## Examples
 
@@ -189,13 +189,13 @@ For local development, use `dev_overrides` so Terraform uses your local build wi
 
 | Example | Description |
 |---------|-------------|
-| [cluster](examples/cluster) | CCS cluster with WIF and cluster admin |
+| [cluster](examples/cluster) | Basic cluster with OCM managd VPC |
 | [cluster_with_vpc](examples/cluster_with_vpc) | Cluster with module-managed VPC (BYOVPC) |
 | [cluster_psc](examples/cluster_psc) | Cluster with Private Service Connect and Secure Boot |
 | [cluster_shared_vpc](examples/cluster_shared_vpc) | Cluster using a Shared VPC |
 | [cluster_multi_az](examples/cluster_multi_az) | Multi-AZ cluster with bare metal machine pool |
 
-Every `make example.<name>` target handles the full lifecycle — WIF config (`terraform/wif_config/`) and cluster are created and destroyed together:
+Every `make example.<name>` target handles the full lifecycle — WIF config ([`terraform/wif_config/`](terraform/wif_config/README.md)) is applied first, then the cluster. On destroy, the cluster is destroyed first, then the WIF config:
 
 ```bash
 make build
@@ -205,7 +205,15 @@ make example.cluster              # Create WIF + cluster
 make example.cluster.destroy      # Destroy cluster + WIF
 ```
 
-The Make target infers `gcp_project_id` from `gcloud config` and `cluster_name` from your username. See [examples/cluster/README.md](examples/cluster/README.md) for details.
+To test with your **local provider build** (build, install to `~/.terraform.d/plugins`, re-init, then run), use the `dev.*` targets:
+
+```bash
+make dev.cluster.apply             # Apply with local provider build
+make dev.cluster.plan              # Plan with local provider build
+make dev.cluster.destroy           # Destroy with local provider build
+```
+
+The Make targets infer `gcp_project_id` from `gcloud config` and `cluster_name` from your username. See [examples/cluster/README.md](examples/cluster/README.md) for details.
 
 ## AI Agent Development
 
@@ -261,6 +269,20 @@ make example.cluster                # or: cd examples/cluster && terraform plan
 ```
 
 No `terraform init` is needed when using `dev_overrides` — Terraform finds the provider binary directly.
+
+#### Alternative: dev.* targets (no dev_overrides required)
+
+If you prefer not to use `dev_overrides`, the `dev.*` targets build and install the provider to `~/.terraform.d/plugins`, clear lock files, re-init, and then run:
+
+```bash
+export OSDGOOGLE_TOKEN="your-token"
+gcloud auth application-default login
+make dev.cluster.apply              # Install provider + WIF + cluster
+make dev.cluster.plan               # Plan only
+make dev.cluster.destroy            # Destroy cluster + WIF
+```
+
+Use `dev.<example>` for any example: `dev.cluster`, `dev.cluster_baremetal`, `dev.cluster_with_vpc`, `dev.cluster_psc`, `dev.cluster_shared_vpc`, `dev.cluster_multi_az`. Override `GCP_PROJECT_ID` and `CLUSTER_NAME` as needed. Each run uses the freshly built provider.
 
 > **Note:** Terraform prints a warning about `dev_overrides` being active. This is expected and safe to ignore during development.
 
@@ -354,6 +376,8 @@ Provider documentation is generated in the [docs/](docs/) directory:
 │   ├── dns_domain/         # osdgoogle_dns_domain
 │   ├── datasources/        # versions, machine_types, regions
 │   └── common/             # Shared helpers
+├── terraform/              # Shared Terraform configs (applied before examples)
+│   └── wif_config/         # WIF config in OCM ([README](terraform/wif_config/README.md) explains why separate apply)
 ├── subsystem/              # OCM mock integration tests
 ├── acceptance/             # Real API acceptance tests
 ├── examples/               # Example configurations

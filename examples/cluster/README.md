@@ -30,7 +30,7 @@ This example follows the recommended practice of **one WIF config per cluster**.
 
 - **OCM token** — `OSDGOOGLE_TOKEN` env var or `ocm_token` variable
 - **GCP** — Project with WIF prerequisites (see OSD docs); `gcloud auth application-default login`
-- **Provider** — `make build` (with `dev_overrides`) or `make install`
+- **Provider** — `make build` (with `dev_overrides`), `make install`, or use `make dev.cluster.apply` (builds, installs, and runs with local build; no `dev_overrides` needed)
 
 ## Apply
 
@@ -40,7 +40,15 @@ From the repository root:
 make example.cluster
 ```
 
-This applies `terraform/wif_config/` first, then `examples/cluster/` with the same variables.
+This applies `terraform/wif_config/` first, then `examples/cluster/` with the same variables. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why the WIF config runs in a separate apply.
+
+For **local provider testing** (build, install to `~/.terraform.d/plugins`, re-init, then run), use the `dev.*` targets. No `dev_overrides` in `~/.terraformrc` needed:
+
+```bash
+make dev.cluster.apply
+make dev.cluster.plan
+make dev.cluster.destroy
+```
 
 ### Variables
 
@@ -55,6 +63,12 @@ From the repository root:
 
 ```bash
 make example.cluster.destroy
+```
+
+Or with the local provider build:
+
+```bash
+make dev.cluster.destroy
 ```
 
 This destroys the cluster first, then the WIF config.

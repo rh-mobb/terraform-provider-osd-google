@@ -46,6 +46,16 @@ make example.cluster              # Create WIF config + cluster
 make example.cluster.destroy      # Destroy cluster + WIF config
 ```
 
+**Testing with the local provider build:** Use `dev.*` targets to build, install the provider to `~/.terraform.d/plugins`, re-init, and run. No `dev_overrides` in `~/.terraformrc` needed:
+
+```bash
+make dev.cluster.apply             # Apply with local build
+make dev.cluster.plan              # Plan with local build
+make dev.cluster.destroy           # Destroy with local build
+```
+
+Use `dev.<example>` for any example: `cluster`, `cluster_psc`, `cluster_shared_vpc`, `cluster_baremetal`, `cluster_multi_az`, `cluster_with_vpc`.
+
 The Make targets infer `gcp_project_id` from `gcloud config` and `cluster_name` from your username (override with `GCP_PROJECT_ID` and `CLUSTER_NAME`). See [cluster/README.md](cluster/README.md) for full documentation.
 
 ### 4. Iterate
@@ -69,4 +79,4 @@ terraform plan
 | [cluster_shared_vpc](cluster_shared_vpc) | Cluster using a Shared VPC |
 | [cluster_multi_az](cluster_multi_az) | Multi-AZ cluster across multiple availability zones |
 
-WIF config (`terraform/wif_config/`) is shared infrastructure applied automatically by the Makefile before each example.
+WIF config (`terraform/wif_config/`) is shared infrastructure applied automatically by the Makefile before each example. It creates the WIF config in OCM; the cluster examples then look it up and provision GCP IAM + the cluster. See [terraform/wif_config/README.md](../terraform/wif_config/README.md) for why it runs in a separate apply.

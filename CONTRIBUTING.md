@@ -34,6 +34,7 @@ Thank you for your interest in contributing! This document provides guidelines f
 - **Requirements:** Go 1.24+, Terraform 1.0+, [jq](https://jqlang.github.io/jq/)
 - **Build:** `make build`
 - **Install locally:** `make install`
+- **Run examples with local build:** `make dev.cluster.apply`, `make dev.cluster.plan`, `make dev.cluster.destroy` — these install the provider, clear locks, re-init, and run. No `dev_overrides` in `~/.terraformrc` required.
 - **Run tests:** `make unit-test`, `make subsystem-test` (requires OCM mock)
 - **Format:** `make fmt`
 
