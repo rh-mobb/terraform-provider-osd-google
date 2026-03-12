@@ -59,3 +59,4 @@ Universal safety and behavioral standards for AI agents operating against live s
 - Prefer reversible operations — `kubectl apply` over `kubectl create`, `helm upgrade --install` over `helm install`
 - Warn the user when an action cannot be easily undone
 - For irreversible operations, require explicit confirmation and document the rollback path if one exists
+- Do not create `.backup`, `.bak`, or similar backup files — use git and editor history (e.g. Cursor's `.history/`) for reversibility

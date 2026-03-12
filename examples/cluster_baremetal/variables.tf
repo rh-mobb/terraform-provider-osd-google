@@ -1,25 +1,32 @@
+variable "ocm_token" {
+  type        = string
+  sensitive   = true
+  default     = ""
+  description = "OCM offline token (optional; use OSDGOOGLE_TOKEN env var instead)"
+}
+
 variable "gcp_project_id" {
   type        = string
-  description = "GCP project ID"
+  description = "GCP project ID for the cluster"
 }
 
 variable "cluster_name" {
   type        = string
-  default     = "my-vpc-cluster"
-  description = "Cluster name (must match terraform/wif_config)"
+  default     = "my-baremetal-cluster"
+  description = "Name of the cluster (must match terraform/wif_config)"
 }
 
 variable "openshift_version" {
   type        = string
   default     = "4.21.3"
-  description = "OpenShift version (x.y.z)"
+  description = "OpenShift version (x.y.z). Used for cluster and WIF; WIF roles use x.y only."
 }
 
-variable "ocm_token" {
+variable "admin_password" {
   type        = string
   sensitive   = true
   default     = ""
-  description = "OCM offline token (optional; use OSDGOOGLE_TOKEN env var)"
+  description = "Cluster admin password (optional; auto-generated if omitted)"
 }
 
 variable "gcp_region" {
@@ -28,10 +35,22 @@ variable "gcp_region" {
   description = "GCP region"
 }
 
-variable "enable_psc" {
-  type        = bool
-  default     = false
-  description = "Enable PSC for private cluster (requires OpenShift 4.17+)"
+variable "compute_machine_type" {
+  type        = string
+  default     = "c3-standard-192-metal"
+  description = "Bare metal machine type for worker nodes. Use osdgoogle_machine_types data source to find available types."
+}
+
+variable "compute_nodes" {
+  type        = number
+  default     = 3
+  description = "Number of worker nodes"
+}
+
+variable "availability_zone" {
+  type        = string
+  default     = "us-central1-a"
+  description = "Single zone for the cluster. The machine type must be available in this zone; e.g. c3-standard-192-metal is in us-central1-a but not us-central1-b. Use google_compute_machine_types to verify."
 }
 
 variable "machine_pools" {

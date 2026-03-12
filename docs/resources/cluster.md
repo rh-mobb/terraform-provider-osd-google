@@ -32,7 +32,7 @@ OpenShift Dedicated (OSD) cluster on Google Cloud Platform. CCS clusters require
 - `domain_prefix` (String) DNS domain prefix for the cluster.
 - `gcp_authentication` (Attributes) GCP service account authentication (when not using WIF). (see [below for nested schema](#nestedatt--gcp_authentication))
 - `gcp_encryption_key` (Attributes) Customer-managed encryption key (CMEK) for CCS clusters. (see [below for nested schema](#nestedatt--gcp_encryption_key))
-- `gcp_network` (Attributes) GCP network (Shared VPC) configuration. (see [below for nested schema](#nestedatt--gcp_network))
+- `gcp_network` (Attributes) GCP network configuration for BYO VPC. Set vpc_project_id only for Shared VPC (host project differs from cluster project). (see [below for nested schema](#nestedatt--gcp_network))
 - `marketplace_gcp_terms` (Boolean) Whether GCP marketplace terms have been accepted.
 - `multi_az` (Boolean) Deploy across multiple availability zones.
 - `network` (Attributes) Network CIDR configuration. (see [below for nested schema](#nestedatt--network))
@@ -105,7 +105,10 @@ Required:
 - `compute_subnet` (String)
 - `control_plane_subnet` (String)
 - `vpc_name` (String)
-- `vpc_project_id` (String)
+
+Optional:
+
+- `vpc_project_id` (String) Host project ID for Shared VPC. Omit when the VPC is in the same project as the cluster.
 
 
 <a id="nestedatt--network"></a>

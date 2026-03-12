@@ -24,10 +24,21 @@ help:
 	@echo "  build             Build the provider binary"
 	@echo "  install           Build and install to ~/.terraform.d/plugins"
 	@echo "  dev-setup         Print dev_overrides config for ~/.terraformrc"
-	@echo "  init-wif-example  Install provider and re-init examples/cluster_wif"
-	@echo "  apply-wif-cluster Two-phase apply for examples/cluster_wif"
-	@echo "  plan-wif-cluster  Plan for examples/cluster_wif"
-	@echo "  destroy-wif-cluster Destroy examples/cluster_wif"
+	@echo ""
+	@echo "  Per-example targets (each handles WIF config + cluster lifecycle):"
+	@echo "  example.<name>          Apply WIF config then example (shorthand for .apply)"
+	@echo "  example.<name>.init     Init terraform/wif_config and examples/<name>"
+	@echo "  example.<name>.plan     Plan WIF config then example"
+	@echo "  example.<name>.apply    Apply WIF config then example"
+	@echo "  example.<name>.destroy  Destroy example then WIF config"
+	@echo ""
+	@echo "  Dev targets (install provider, clear lock, re-init, then run):"
+	@echo "  dev.<name>              Apply with freshly installed provider"
+	@echo "  dev.<name>.plan         Plan with freshly installed provider"
+	@echo "  dev.<name>.apply        Apply with freshly installed provider"
+	@echo "  dev.<name>.destroy      Destroy with freshly installed provider"
+	@echo "  Examples: $(EXAMPLES)"
+	@echo ""
 	@echo "  unit-test         Run unit tests"
 	@echo "  subsystem-test    Run subsystem tests (requires install)"
 	@echo "  acceptance-test   Run acceptance tests (requires OCM credentials)"
@@ -69,31 +80,92 @@ PROVIDER_ADDRESS=registry.terraform.io/rh-mobb/osd-google
 build:
 	go build -ldflags="$(ldflags)" -o ${BINARY}
 
-WIF_EXAMPLE_DIR := examples/cluster_wif
+# Example directories (discovered from examples/*)
+EXAMPLES_DIRS := $(wildcard examples/*/main.tf)
+EXAMPLES := $(sort $(patsubst examples/%/main.tf,%,$(EXAMPLES_DIRS)))
 
-# Re-initialise the WIF example after installing the provider so the lock file
-# reflects the new binary checksum.
-.PHONY: init-wif-example
-init-wif-example: install
-	@rm -f $(WIF_EXAMPLE_DIR)/.terraform.lock.hcl
-	@cd $(WIF_EXAMPLE_DIR) && terraform init -upgrade
+WIF_CONFIG_DIR := terraform/wif_config
 
-.PHONY: apply-wif-cluster
-apply-wif-cluster: init-wif-example
-	@echo "Phase 1: Creating WIF config in OCM (OCM returns GCP blueprint)..."
-	@cd $(WIF_EXAMPLE_DIR) && terraform apply -auto-approve -target=osdgoogle_wif_config.wif
+# Inferred defaults (override with: make example.cluster.apply GCP_PROJECT_ID=my-proj CLUSTER_NAME=my-cluster)
+GCP_PROJECT_ID ?= $(shell gcloud config get-value project 2>/dev/null)
+CLUSTER_NAME ?= $(shell echo "$${USER:-$$(whoami)}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$$//')
+TF_VARS := -var="gcp_project_id=$(GCP_PROJECT_ID)" -var="cluster_name=$(CLUSTER_NAME)"
+EXTRA_TF_VARS ?=
+
+# Per-example targets: each handles the full WIF + cluster lifecycle.
+# Usage: make example.cluster.apply  make example.cluster_psc.plan
+# Add extra vars: make example.cluster_shared_vpc.apply EXTRA_TF_VARS="-var=vpc_name=my-vpc"
+# EXTRA_TF_VARS are only passed to the example dir, not the WIF config.
+define example-targets
+.PHONY: example.$(1) example.$(1).init example.$(1).plan example.$(1).apply example.$(1).destroy
+example.$(1): example.$(1).apply
+
+example.$(1).init:
+	@cd $(WIF_CONFIG_DIR) && terraform init -upgrade
+	@cd examples/$(1) && terraform init -upgrade
+
+example.$(1).plan: example.$(1).init
+	@[ -n "$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
+	@echo "Planning WIF config (project=$(GCP_PROJECT_ID), cluster_name=$(CLUSTER_NAME))..."
+	@cd $(WIF_CONFIG_DIR) && terraform plan $(TF_VARS)
 	@echo ""
-	@echo "Phase 2: Creating GCP resources (pool, service accounts, IAM) and cluster..."
-	@cd $(WIF_EXAMPLE_DIR) && terraform apply -auto-approve
+	@echo "Planning examples/$(1)..."
+	@cd examples/$(1) && terraform plan $(TF_VARS) $(EXTRA_TF_VARS)
 
-.PHONY: plan-wif-cluster
-plan-wif-cluster: init-wif-example
-	@cd $(WIF_EXAMPLE_DIR) && terraform plan
+example.$(1).apply: example.$(1).init
+	@[ -n "$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
+	@echo "Step 1: Creating WIF config in OCM (project=$(GCP_PROJECT_ID), cluster_name=$(CLUSTER_NAME))..."
+	@cd $(WIF_CONFIG_DIR) && terraform apply -auto-approve $(TF_VARS)
+	@echo ""
+	@echo "Step 2: Applying examples/$(1)..."
+	@cd examples/$(1) && terraform apply -auto-approve $(TF_VARS) $(EXTRA_TF_VARS)
 
-.PHONY: destroy-wif-cluster
-destroy-wif-cluster: init-wif-example
-	@echo "Destroying WIF cluster (using -refresh=false so for_each keys from wif_config state are known)..."
-	@cd $(WIF_EXAMPLE_DIR) && terraform destroy -refresh=false -auto-approve
+example.$(1).destroy: example.$(1).init
+	@[ -n "$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
+	@echo "Step 1: Destroying examples/$(1)..."
+	@cd examples/$(1) && terraform destroy -auto-approve $(TF_VARS) $(EXTRA_TF_VARS)
+	@echo ""
+	@echo "Step 2: Destroying WIF config..."
+	@cd $(WIF_CONFIG_DIR) && terraform destroy -auto-approve $(TF_VARS)
+endef
+$(foreach ex,$(EXAMPLES),$(eval $(call example-targets,$(ex))))
+
+# Dev targets: install provider, clear lock, re-init, then run.
+# Usage: make dev.cluster_with_vpc.apply  make dev.cluster_psc.plan
+define dev-targets
+.PHONY: dev.$(1) dev.$(1).init dev.$(1).plan dev.$(1).apply dev.$(1).destroy
+dev.$(1): dev.$(1).apply
+
+dev.$(1).init: install
+	@rm -f $(WIF_CONFIG_DIR)/.terraform.lock.hcl examples/$(1)/.terraform.lock.hcl
+	@cd $(WIF_CONFIG_DIR) && terraform init -upgrade
+	@cd examples/$(1) && terraform init -upgrade
+
+dev.$(1).plan: dev.$(1).init
+	@[ -n "$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
+	@echo "Planning WIF config (dev)..."
+	@cd $(WIF_CONFIG_DIR) && terraform plan $(TF_VARS)
+	@echo ""
+	@echo "Planning examples/$(1) (dev)..."
+	@cd examples/$(1) && terraform plan $(TF_VARS) $(EXTRA_TF_VARS)
+
+dev.$(1).apply: dev.$(1).init
+	@[ -n "$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
+	@echo "Step 1: Creating WIF config in OCM (dev)..."
+	@cd $(WIF_CONFIG_DIR) && terraform apply -auto-approve $(TF_VARS)
+	@echo ""
+	@echo "Step 2: Applying examples/$(1) (dev)..."
+	@cd examples/$(1) && terraform apply -auto-approve $(TF_VARS) $(EXTRA_TF_VARS)
+
+dev.$(1).destroy: dev.$(1).init
+	@[ -n "$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
+	@echo "Step 1: Destroying examples/$(1) (dev)..."
+	@cd examples/$(1) && terraform destroy -auto-approve $(TF_VARS) $(EXTRA_TF_VARS)
+	@echo ""
+	@echo "Step 2: Destroying WIF config (dev)..."
+	@cd $(WIF_CONFIG_DIR) && terraform destroy -auto-approve $(TF_VARS)
+endef
+$(foreach ex,$(EXAMPLES),$(eval $(call dev-targets,$(ex))))
 
 .PHONY: dev-setup
 dev-setup: build
@@ -148,6 +220,7 @@ fmt_go:
 
 .PHONY: fmt_tf
 fmt_tf:
+	terraform fmt -recursive terraform 2>/dev/null || true
 	terraform fmt -recursive examples 2>/dev/null || true
 	terraform fmt -recursive tests 2>/dev/null || true
 	terraform fmt -recursive modules 2>/dev/null || true

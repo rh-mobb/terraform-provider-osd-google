@@ -28,7 +28,7 @@ terraform apply
 From the provider repo root, use the Makefile target:
 
 ```bash
-make apply-wif-cluster
+make example.cluster
 ```
 
 ## Resources

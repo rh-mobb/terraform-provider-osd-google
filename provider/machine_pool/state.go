@@ -17,34 +17,36 @@ limitations under the License.
 package machine_pool
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// autoscalingAttrTypes defines the attribute types for the autoscaling object.
+var autoscalingAttrTypes = map[string]attr.Type{
+	"min_replicas": types.Int64Type,
+	"max_replicas": types.Int64Type,
+}
+
+// gcpAttrTypes defines the attribute types for the gcp object.
+var gcpAttrTypes = map[string]attr.Type{
+	"secure_boot": types.BoolType,
+}
+
 // MachinePoolState holds the Terraform state for a machine pool.
 type MachinePoolState struct {
-	ID               types.String `tfsdk:"id"`
-	ClusterID        types.String `tfsdk:"cluster_id"`
-	Name             types.String `tfsdk:"name"`
-	InstanceType     types.String `tfsdk:"instance_type"`
-	Replicas         types.Int64  `tfsdk:"replicas"`
-	AvailabilityZones types.List  `tfsdk:"availability_zones"`
-	Labels           types.Map    `tfsdk:"labels"`
-	Taints           types.List   `tfsdk:"taints"`
-	RootVolumeSize   types.Int64  `tfsdk:"root_volume_size"`
+	ID                types.String `tfsdk:"id"`
+	ClusterID         types.String `tfsdk:"cluster_id"`
+	Name              types.String `tfsdk:"name"`
+	InstanceType      types.String `tfsdk:"instance_type"`
+	Replicas          types.Int64  `tfsdk:"replicas"`
+	AvailabilityZones types.List   `tfsdk:"availability_zones"`
+	Labels            types.Map    `tfsdk:"labels"`
+	Taints            types.List   `tfsdk:"taints"`
+	RootVolumeSize    types.Int64  `tfsdk:"root_volume_size"`
 
-	Autoscaling *AutoscalingState `tfsdk:"autoscaling"`
-	GCP         *GCPMachinePoolState `tfsdk:"gcp"`
-}
-
-// AutoscalingState holds autoscaling config.
-type AutoscalingState struct {
-	MinReplicas types.Int64 `tfsdk:"min_replicas"`
-	MaxReplicas types.Int64 `tfsdk:"max_replicas"`
-}
-
-// GCPMachinePoolState holds GCP-specific machine pool options.
-type GCPMachinePoolState struct {
-	SecureBoot types.Bool `tfsdk:"secure_boot"`
+	// Autoscaling and GCP use types.Object to support unknown values during plan.
+	Autoscaling types.Object `tfsdk:"autoscaling"`
+	GCP         types.Object `tfsdk:"gcp"`
 }
 
 // TaintState holds a single taint.

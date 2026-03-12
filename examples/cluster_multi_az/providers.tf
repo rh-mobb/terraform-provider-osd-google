@@ -1,13 +1,12 @@
-# OSD cluster with Shared VPC (uses WIF)
+# Multi-AZ OSD cluster with bare metal machine pool (uses WIF)
 #
-# Uses a shared VPC (host project) for network connectivity.
-# WIF config managed by terraform/wif_config/. Uses data source + wif_gcp module.
+# Creates a multi-AZ cluster with a VPC and a secondary machine pool using
+# bare metal instance types. WIF config is managed by terraform/wif_config/.
 #
 # Prerequisites:
 # - OCM token
-# - Shared VPC host project
-# - Service project attached to the shared VPC
-# - Subnets for control plane and compute in the host project
+# - GCP project with billing, OSD entitlements
+# - Application Default Credentials (gcloud auth application-default login)
 
 terraform {
   required_providers {

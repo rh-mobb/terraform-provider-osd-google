@@ -2,7 +2,7 @@
 gcp_project_id = "my-gcp-project"
 
 # Name of the OSD cluster (must match terraform/wif_config)
-cluster_name = "my-vpc-cluster"
+cluster_name = "my-multiaz-cluster"
 
 # OpenShift version (x.y.z)
 openshift_version = "4.21.3"
@@ -10,19 +10,26 @@ openshift_version = "4.21.3"
 # GCP region for the cluster and VPC
 gcp_region = "us-central1"
 
-# Enable Private Service Connect for private cluster (requires OpenShift 4.17+)
-enable_psc = false
-
 # OCM token: optional; use OSDGOOGLE_TOKEN env var
 #ocm_token = "your-token"
 
 # Additional machine pools (optional). If autoscaling_enabled = true, set min_replicas and max_replicas. If false, set replicas.
+# For multi-AZ, pass 3 availability_zones if specifying zones.
 # machine_pools = [
 #   {
 #     name                = "compute"
 #     instance_type       = "n2-standard-4"
 #     autoscaling_enabled = false
 #     replicas            = 3
+#     availability_zones  = ["us-central1-a", "us-central1-b", "us-central1-c"]
+#   },
+#   {
+#     name                = "autoscale"
+#     instance_type       = "n2-standard-4"
+#     autoscaling_enabled = true
+#     min_replicas        = 3
+#     max_replicas        = 12
+#     root_volume_size    = 128
 #   }
 # ]
 

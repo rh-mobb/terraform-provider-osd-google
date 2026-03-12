@@ -1,5 +1,8 @@
-# OSD cluster using Shared VPC
-# WIF config managed by terraform/wif_config/. Uses data source + wif_gcp module.
+# Multi-AZ OSD cluster
+#
+# Uses WIF data source + wif_gcp module (WIF config created by terraform/wif_config/).
+# The cluster is deployed across multiple availability zones with module-managed VPC.
+# Explicitly passes 3 zones (required for multi-AZ when specifying availability_zones).
 
 data "osdgoogle_wif_config" "wif" {
   display_name = "${var.cluster_name}-wif"
@@ -7,6 +10,12 @@ data "osdgoogle_wif_config" "wif" {
 
 data "google_project" "project" {
   project_id = var.gcp_project_id
+}
+
+data "google_compute_zones" "available" {
+  project = var.gcp_project_id
+  region  = var.gcp_region
+  status  = "UP"
 }
 
 module "wif_gcp" {
@@ -28,22 +37,31 @@ module "wif_gcp" {
   federated_project_number = try(data.osdgoogle_wif_config.wif.gcp.federated_project_number, "") != "" ? data.osdgoogle_wif_config.wif.gcp.federated_project_number : tostring(data.google_project.project.number)
 }
 
-resource "osdgoogle_cluster" "shared_vpc_cluster" {
+module "osd_vpc" {
+  source = "../../modules/osd-vpc"
+
+  project_id   = var.gcp_project_id
+  region       = var.gcp_region
+  cluster_name = var.cluster_name
+}
+
+resource "osdgoogle_cluster" "cluster" {
   depends_on = [module.wif_gcp]
 
-  name           = var.cluster_name
-  cloud_region   = "us-central1"
-  gcp_project_id = var.gcp_project_id
-  wif_config_id  = data.osdgoogle_wif_config.wif.id
-  version        = var.openshift_version
-  compute_nodes  = 3
-  ccs_enabled    = true
+  name               = var.cluster_name
+  cloud_region       = var.gcp_region
+  gcp_project_id     = var.gcp_project_id
+  wif_config_id      = data.osdgoogle_wif_config.wif.id
+  version            = var.openshift_version
+  multi_az           = true
+  compute_nodes      = 3
+  availability_zones = slice(data.google_compute_zones.available.names, 0, 3)
+  ccs_enabled        = true
 
   gcp_network = {
-    vpc_name             = var.vpc_name
-    vpc_project_id       = var.vpc_host_project_id
-    compute_subnet       = var.compute_subnet
-    control_plane_subnet = var.control_plane_subnet
+    vpc_name             = module.osd_vpc.vpc_name
+    control_plane_subnet  = module.osd_vpc.control_plane_subnet
+    compute_subnet       = module.osd_vpc.compute_subnet
   }
 }
 
@@ -54,7 +72,7 @@ locals {
 resource "osdgoogle_machine_pool" "pools" {
   for_each = local.machine_pools_map
 
-  cluster_id    = osdgoogle_cluster.shared_vpc_cluster.id
+  cluster_id    = osdgoogle_cluster.cluster.id
   name          = each.value.name
   instance_type = each.value.instance_type
 

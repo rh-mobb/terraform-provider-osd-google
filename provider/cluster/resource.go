@@ -56,6 +56,7 @@ type ClusterResource struct {
 var _ resource.Resource = &ClusterResource{}
 var _ resource.ResourceWithConfigure = &ClusterResource{}
 var _ resource.ResourceWithImportState = &ClusterResource{}
+var _ resource.ResourceWithConfigValidators = &ClusterResource{}
 
 // New creates a new cluster resource.
 func New() resource.Resource {
@@ -161,7 +162,7 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Optional:    true,
 			},
 			"availability_zones": schema.ListAttribute{
-				Description: "GCP availability zones for the cluster. Defaults to a single zone when not specified.",
+				Description: "GCP availability zones for the cluster. When specified: must be exactly 1 zone for single-AZ (multi_az = false), or exactly 3 zones for multi-AZ (multi_az = true). Omit to let OCM choose. Ensure the compute machine type is available in each zone (e.g. bare metal types are zone-specific).",
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
@@ -218,11 +219,11 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				},
 			},
 			"gcp_network": schema.SingleNestedAttribute{
-				Description: "GCP network (Shared VPC) configuration.",
+				Description: "GCP network configuration for BYO VPC. Set vpc_project_id only for Shared VPC (host project differs from cluster project).",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
 					"vpc_name":             schema.StringAttribute{Required: true},
-					"vpc_project_id":       schema.StringAttribute{Required: true},
+					"vpc_project_id":       schema.StringAttribute{Optional: true, Computed: true, Description: "Host project ID for Shared VPC. Omit when the VPC is in the same project as the cluster."},
 					"compute_subnet":       schema.StringAttribute{Required: true},
 					"control_plane_subnet": schema.StringAttribute{Required: true},
 				},
@@ -512,6 +513,53 @@ func (r *ClusterResource) ImportState(ctx context.Context, req resource.ImportSt
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
+func (r *ClusterResource) ConfigValidators(ctx context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{&clusterAvailabilityZonesValidator{}}
+}
+
+// clusterAvailabilityZonesValidator ensures availability_zones count matches multi_az.
+// Single-AZ: exactly 1 zone. Multi-AZ: exactly 3 zones.
+type clusterAvailabilityZonesValidator struct{}
+
+func (v *clusterAvailabilityZonesValidator) Description(_ context.Context) string {
+	return "availability_zones must contain exactly 1 zone for single-AZ (multi_az = false) or exactly 3 zones for multi-AZ (multi_az = true)"
+}
+
+func (v *clusterAvailabilityZonesValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v *clusterAvailabilityZonesValidator) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var config ClusterState
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if config.AvailabilityZones.IsNull() || config.AvailabilityZones.IsUnknown() {
+		return
+	}
+	if config.MultiAZ.IsUnknown() {
+		return
+	}
+	count := len(config.AvailabilityZones.Elements())
+	multiAZ := config.MultiAZ.ValueBool()
+	if multiAZ {
+		if count != 3 {
+			resp.Diagnostics.AddError(
+				"Invalid availability_zones for multi-AZ cluster",
+				"When multi_az = true, availability_zones must contain exactly 3 zones.",
+			)
+		}
+	} else {
+		if count != 1 {
+			resp.Diagnostics.AddError(
+				"Invalid availability_zones for single-AZ cluster",
+				"When multi_az = false, availability_zones must contain exactly 1 zone.",
+			)
+		}
+	}
+}
+
 func (r *ClusterResource) buildClusterObject(ctx context.Context, s *ClusterState) (*cmv1.Cluster, error) {
 	builder := cmv1.NewCluster().
 		Name(s.Name.ValueString()).
@@ -595,9 +643,11 @@ func (r *ClusterResource) buildClusterObject(ctx context.Context, s *ClusterStat
 	if s.GCPNetwork != nil {
 		netBuilder := cmv1.NewGCPNetwork().
 			VPCName(s.GCPNetwork.VPCName.ValueString()).
-			VPCProjectID(s.GCPNetwork.VPCProjectID.ValueString()).
 			ComputeSubnet(s.GCPNetwork.ComputeSubnet.ValueString()).
 			ControlPlaneSubnet(s.GCPNetwork.ControlPlaneSubnet.ValueString())
+		if !s.GCPNetwork.VPCProjectID.IsNull() && s.GCPNetwork.VPCProjectID.ValueString() != "" {
+			netBuilder.VPCProjectID(s.GCPNetwork.VPCProjectID.ValueString())
+		}
 		builder.GCPNetwork(netBuilder)
 	}
 
@@ -768,6 +818,19 @@ func (r *ClusterResource) populateState(ctx context.Context, cluster *cmv1.Clust
 
 	if cluster.GCP() != nil {
 		state.GCPProjectID = types.StringValue(cluster.GCP().ProjectID())
+	}
+
+	if state.GCPNetwork != nil {
+		if gcpNet := cluster.GCPNetwork(); gcpNet != nil {
+			state.GCPNetwork.VPCName = types.StringValue(gcpNet.VPCName())
+			state.GCPNetwork.ComputeSubnet = types.StringValue(gcpNet.ComputeSubnet())
+			state.GCPNetwork.ControlPlaneSubnet = types.StringValue(gcpNet.ControlPlaneSubnet())
+			if vpcProjectID, ok := gcpNet.GetVPCProjectID(); ok && vpcProjectID != "" {
+				state.GCPNetwork.VPCProjectID = types.StringValue(vpcProjectID)
+			} else {
+				state.GCPNetwork.VPCProjectID = types.StringNull()
+			}
+		}
 	}
 
 	return nil

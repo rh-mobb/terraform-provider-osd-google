@@ -101,7 +101,7 @@ resource "google_service_account_iam_member" "wif_principal" {
 
   service_account_id = google_service_account.wif[each.value.target_sa].name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principal://iam.googleapis.com/projects/${var.federated_project_number}/locations/global/workloadIdentityPools/${var.pool_id}/subject/system:serviceaccount:${each.value.namespace}:${each.value.sa_name}"
+  member             = "principal://iam.googleapis.com/projects/${var.federated_project_number}/locations/global/workloadIdentityPools/${google_iam_workload_identity_pool.wif.workload_identity_pool_id}/subject/system:serviceaccount:${each.value.namespace}:${each.value.sa_name}"
 }
 
 # Resource-specific bindings (e.g. iam.serviceAccountUser on another SA)

@@ -1,14 +1,25 @@
-# OCM offline token or access token (required)
-#ocm_token = "your-token"
+# OCM offline token. Prefer OSDGOOGLE_TOKEN env var.
+#ocm_token = ""
 
-# GCP project ID for the cluster (required)
+# GCP project ID (required)
 gcp_project_id = "my-gcp-project"
-
-# GCP project number, numeric (required)
-gcp_project_number = "123456789012"
 
 # Subnet name or CIDR for PSC service attachment (required)
 psc_subnet = "psc-subnet"
 
-# Name of the OSD cluster
+# Cluster name (must match terraform/wif_config)
 cluster_name = "my-psc-cluster"
+
+# OpenShift version
+openshift_version = "4.21.3"
+
+# Additional machine pools (optional). PSC cluster has secure_boot; pools can use secure_boot = true.
+# machine_pools = [
+#   {
+#     name                = "compute"
+#     instance_type       = "n2-standard-4"
+#     autoscaling_enabled = false
+#     replicas            = 3
+#     secure_boot         = true
+#   }
+# ]

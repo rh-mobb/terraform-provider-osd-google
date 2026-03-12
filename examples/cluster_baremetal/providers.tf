@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     osdgoogle = {
-      source  = "registry.terraform.io/rh-mobb/osd-google"
+      source  = "terraform.local/local/osd-google"
       version = ">= 0.0.1"
     }
     google = {
@@ -12,7 +12,8 @@ terraform {
 }
 
 provider "osdgoogle" {
-  # Token from OSDGOOGLE_TOKEN env var when not set here
+  token             = var.ocm_token != "" ? var.ocm_token : null
+  openshift_version = var.openshift_version
 }
 
 provider "google" {

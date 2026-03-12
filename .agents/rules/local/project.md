@@ -24,6 +24,17 @@ RHCS uses structured commit messages:
 - `feat:` — introduces a new feature
 - Others: `build`, `ci`, `docs`, `perf`, `refactor`, `style`, `test`
 
+## Operational Safety
+
+**Never run the following commands without explicit user permission:**
+
+- `make` (any target) — builds, installs, or runs tests that modify the system
+- `ocm delete`, `ocm create` — mutates live OCM resources (clusters, WIF configs)
+- `terraform apply`, `terraform destroy` — mutates cloud infrastructure
+- `gcloud` write operations — mutates GCP resources
+
+Always **ask the user to run** these commands and provide the exact command to copy-paste. Read-only commands (`ocm get`, `ocm list`, `ocm describe`, `terraform state list`, `gcloud ... list`) are safe to run directly.
+
 ## Build and Makefile
 
 - `make build` — compile with version/commit ldflags

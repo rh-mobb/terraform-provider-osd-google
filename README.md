@@ -22,6 +22,7 @@ A [Terraform](https://www.terraform.io/) provider for managing [OpenShift Dedica
 | `osdgoogle_versions` | List available OpenShift versions |
 | `osdgoogle_machine_types` | List GCP machine types by region |
 | `osdgoogle_regions` | List available GCP regions |
+| `osdgoogle_wif_config` | Look up WIF config by display name or ID |
 
 ### Supported Cluster Configuration
 
@@ -179,7 +180,7 @@ output "console_url" {
 }
 ```
 
-CCS clusters (your own GCP project) require `wif_config_id` or `gcp_authentication`—see [cluster_wif](examples/cluster_wif) for an example.
+CCS clusters (your own GCP project) require `wif_config_id` or `gcp_authentication`—see [cluster](examples/cluster) for an example.
 
 ## Examples
 
@@ -188,31 +189,23 @@ For local development, use `dev_overrides` so Terraform uses your local build wi
 
 | Example | Description |
 |---------|-------------|
-| [cluster_basic](examples/cluster_basic) | Basic CCS cluster (uses existing osd-ccs-admin SA) |
-| [cluster_admin](examples/cluster_admin) | Cluster with HTPasswd admin user |
-| [cluster_wif](examples/cluster_wif) | CCS cluster with Workload Identity Federation (requires two-phase apply; uses one WIF per cluster) |
+| [cluster](examples/cluster) | CCS cluster with WIF and cluster admin |
 | [cluster_with_vpc](examples/cluster_with_vpc) | Cluster with module-managed VPC (BYOVPC) |
 | [cluster_psc](examples/cluster_psc) | Cluster with Private Service Connect and Secure Boot |
 | [cluster_shared_vpc](examples/cluster_shared_vpc) | Cluster using a Shared VPC |
+| [cluster_multi_az](examples/cluster_multi_az) | Multi-AZ cluster with bare metal machine pool |
 
-Run an example (with `dev_overrides` configured — see [Development Workflow](#development-workflow)):
+Every `make example.<name>` target handles the full lifecycle — WIF config (`terraform/wif_config/`) and cluster are created and destroyed together:
 
 ```bash
 make build
 export OSDGOOGLE_TOKEN="your-token"
 gcloud auth application-default login
-cd examples/cluster_basic
-terraform plan -var="gcp_project_id=YOUR_GCP_PROJECT"
-terraform apply -var="gcp_project_id=YOUR_GCP_PROJECT"
+make example.cluster              # Create WIF + cluster
+make example.cluster.destroy      # Destroy cluster + WIF
 ```
 
-**cluster_wif:** The WIF example requires a two-phase apply because the GCP module's `for_each` depends on OCM's blueprint (known only after the WIF config is created). Use:
-
-```bash
-make apply-wif-cluster
-```
-
-See [examples/cluster_wif/README.md](examples/cluster_wif/README.md) for details.
+The Make target infers `gcp_project_id` from `gcloud config` and `cluster_name` from your username. See [examples/cluster/README.md](examples/cluster/README.md) for details.
 
 ## AI Agent Development
 
@@ -263,10 +256,8 @@ Replace the path with the actual repo directory printed by `make dev-setup`.
 After the one-time setup, the dev cycle is:
 
 ```bash
-make build                          # rebuild after code changes
-cd examples/cluster_basic           # or cluster_wif (use make apply-wif-cluster)
-terraform plan -var="gcp_project_id=YOUR_PROJECT"
-terraform apply -var="gcp_project_id=YOUR_PROJECT"
+make build
+make example.cluster                # or: cd examples/cluster && terraform plan
 ```
 
 No `terraform init` is needed when using `dev_overrides` — Terraform finds the provider binary directly.
@@ -288,7 +279,7 @@ Delve prints a `TF_REATTACH_PROVIDERS` value. Export it in another terminal:
 
 ```bash
 export TF_REATTACH_PROVIDERS='<value printed by delve>'
-cd examples/cluster_wif
+cd examples/cluster
 terraform apply    # attaches to the running provider process
 ```
 

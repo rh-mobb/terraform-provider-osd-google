@@ -5,7 +5,7 @@ variable "gcp_project_id" {
 
 variable "cluster_name" {
   type        = string
-  default     = "my-vpc-cluster"
+  default     = "my-multiaz-cluster"
   description = "Cluster name (must match terraform/wif_config)"
 }
 
@@ -26,12 +26,6 @@ variable "gcp_region" {
   type        = string
   default     = "us-central1"
   description = "GCP region"
-}
-
-variable "enable_psc" {
-  type        = bool
-  default     = false
-  description = "Enable PSC for private cluster (requires OpenShift 4.17+)"
 }
 
 variable "machine_pools" {

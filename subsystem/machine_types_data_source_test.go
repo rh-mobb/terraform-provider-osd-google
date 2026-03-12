@@ -30,11 +30,15 @@ var _ = Describe("Machine types data source", func() {
 	It("Can list machine types for a region", func() {
 		TestServer.AppendHandlers(
 			CombineHandlers(
-				VerifyRequest(http.MethodPost, "/api/clusters_mgmt/v1/gcp_inquiries/machine_types"),
+				VerifyRequest(http.MethodGet, "/api/clusters_mgmt/v1/machine_types"),
+				VerifyFormKV("search", "cloud_provider.id='gcp'"),
 				RespondWithJSON(http.StatusOK, `{
+				  "page": 1,
+				  "size": 2,
+				  "total": 2,
 				  "items": [
-				    {"id": "custom-4-16384", "name": "custom-4-16384"},
-				    {"id": "n2-standard-4", "name": "n2-standard-4"}
+				    {"id": "custom-4-16384", "name": "custom-4-16384", "cloud_provider": {"id": "gcp"}},
+				    {"id": "n2-standard-4", "name": "n2-standard-4", "cloud_provider": {"id": "gcp"}}
 				  ]
 				}`),
 			),

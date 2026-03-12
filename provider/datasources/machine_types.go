@@ -46,18 +46,19 @@ func (d *MachineTypesDataSource) Metadata(ctx context.Context, req datasource.Me
 
 func (d *MachineTypesDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "List of GCP machine types available for OSD clusters in a region.",
+		Description: "List of GCP machine types available for OSD clusters. Uses the OCM global catalog (no GCP credentials required). " +
+			"Note: validation is not region-specific; use availability_zones on machine pools to pin bare metal types to supported zones.",
 		Attributes: map[string]schema.Attribute{
 			"region": schema.StringAttribute{
-				Description: "GCP region (e.g., us-central1).",
-				Required:    true,
+				Description: "GCP region (e.g., us-central1). Kept for compatibility; global catalog is not region-filtered.",
+				Optional:    true,
 			},
 			"gcp_project_id": schema.StringAttribute{
-				Description: "GCP project ID.",
-				Required:    true,
+				Description: "GCP project ID. Kept for compatibility; global catalog is not project-specific.",
+				Optional:    true,
 			},
 			"items": schema.ListNestedAttribute{
-				Description: "List of machine types.",
+				Description: "List of GCP machine types.",
 				Computed:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
@@ -89,37 +90,43 @@ func (d *MachineTypesDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	body, err := cmv1.NewCloudProviderData().
-		GCP(cmv1.NewGCP().ProjectID(config.GCPProjectID.ValueString())).
-		Region(cmv1.NewCloudRegion().ID(config.Region.ValueString())).
-		Build()
-	if err != nil {
-		resp.Diagnostics.AddError("failed to build request", err.Error())
-		return
-	}
-
-	searchResp, err := d.connection.ClustersMgmt().V1().GCPInquiries().MachineTypes().Search().Body(body).SendContext(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("failed to list machine types", err.Error())
-		return
-	}
-
+	// Use global machine types API - no GCP credentials required (unlike gcp_inquiries which needs client_email).
+	// Filter by cloud_provider.id='gcp' to get only GCP machine types.
+	collection := d.connection.ClustersMgmt().V1().MachineTypes()
 	var items []MachineTypeItem
-	searchResp.Items().Each(func(mt *cmv1.MachineType) bool {
-		items = append(items, MachineTypeItem{
-			ID:   types.StringValue(mt.ID()),
-			Name: types.StringValue(mt.Name()),
+	listSize := 100
+	listPage := 1
+	listRequest := collection.List().Search("cloud_provider.id='gcp'").Size(listSize)
+
+	for {
+		listResp, err := listRequest.Page(listPage).SendContext(ctx)
+		if err != nil {
+			resp.Diagnostics.AddError("failed to list machine types", err.Error())
+			return
+		}
+		listResp.Items().Each(func(mt *cmv1.MachineType) bool {
+			// Double-check cloud provider; search may not filter in all OCM versions
+			if mt.CloudProvider() != nil && mt.CloudProvider().ID() == "gcp" {
+				items = append(items, MachineTypeItem{
+					ID:   types.StringValue(mt.ID()),
+					Name: types.StringValue(mt.Name()),
+				})
+			}
+			return true
 		})
-		return true
-	})
+		if listResp.Size() < listSize {
+			break
+		}
+		listPage++
+	}
 
 	state := MachineTypesState{Items: items, Region: config.Region, GCPProjectID: config.GCPProjectID}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 type MachineTypesState struct {
-	Region       types.String     `tfsdk:"region"`
-	GCPProjectID types.String     `tfsdk:"gcp_project_id"`
+	Region       types.String      `tfsdk:"region"`
+	GCPProjectID types.String      `tfsdk:"gcp_project_id"`
 	Items        []MachineTypeItem `tfsdk:"items"`
 }
 

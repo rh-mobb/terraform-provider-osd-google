@@ -1,15 +1,20 @@
 output "cluster_id" {
-  value       = osdgoogle_cluster.wif_cluster.id
+  value       = osdgoogle_cluster.cluster.id
   description = "OCM cluster ID"
 }
 
+output "wif_config_id" {
+  value       = data.osdgoogle_wif_config.wif.id
+  description = "WIF config ID (from data source)"
+}
+
 output "api_url" {
-  value       = osdgoogle_cluster.wif_cluster.api_url
+  value       = osdgoogle_cluster.cluster.api_url
   description = "Kubernetes API URL"
 }
 
 output "console_url" {
-  value       = osdgoogle_cluster.wif_cluster.console_url
+  value       = osdgoogle_cluster.cluster.console_url
   description = "OpenShift web console URL"
 }
 

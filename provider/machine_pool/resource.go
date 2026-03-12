@@ -20,12 +20,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	cmv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
@@ -41,6 +45,7 @@ type MachinePoolResource struct {
 var _ resource.Resource = &MachinePoolResource{}
 var _ resource.ResourceWithConfigure = &MachinePoolResource{}
 var _ resource.ResourceWithImportState = &MachinePoolResource{}
+var _ resource.ResourceWithConfigValidators = &MachinePoolResource{}
 
 // New creates a new machine pool resource.
 func New() resource.Resource {
@@ -67,8 +72,11 @@ func (r *MachinePoolResource) Schema(ctx context.Context, req resource.SchemaReq
 				Required:    true,
 			},
 			"name": schema.StringAttribute{
-				Description: "Name of the machine pool.",
+				Description: "Name of the machine pool. Cannot be 'worker' or 'workers-*' (reserved for the default worker pool, which is not yet manageable as a machine pool resource).",
 				Required:    true,
+				Validators: []validator.String{
+					machinePoolNameValidator{},
+				},
 			},
 			"instance_type": schema.StringAttribute{
 				Description: "GCP machine type (e.g., custom-4-16384).",
@@ -79,9 +87,10 @@ func (r *MachinePoolResource) Schema(ctx context.Context, req resource.SchemaReq
 				Optional:    true,
 			},
 			"availability_zones": schema.ListAttribute{
-				Description: "GCP availability zones.",
+				Description: "GCP availability zones. When not specified, OCM assigns a default zone; this value is populated from the API after create.",
 				ElementType: types.StringType,
 				Optional:    true,
+				Computed:    true,
 			},
 			"labels": schema.MapAttribute{
 				Description: "Kubernetes labels.",
@@ -122,6 +131,80 @@ func (r *MachinePoolResource) Schema(ctx context.Context, req resource.SchemaReq
 				},
 			},
 		},
+	}
+}
+
+// machinePoolNameValidator rejects reserved names for the default worker pool.
+type machinePoolNameValidator struct{}
+
+func (machinePoolNameValidator) Description(_ context.Context) string {
+	return "name cannot be 'worker' or 'workers-*' (reserved for the default worker pool)"
+}
+
+func (machinePoolNameValidator) MarkdownDescription(ctx context.Context) string {
+	return "name cannot be 'worker' or 'workers-*' (reserved for the default worker pool)"
+}
+
+func (machinePoolNameValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	name := req.ConfigValue.ValueString()
+	if name == "worker" || strings.HasPrefix(name, "workers-") {
+		resp.Diagnostics.AddError(
+			"Invalid machine pool name",
+			"The name 'worker' and names matching 'workers-*' are reserved for the cluster's default worker pool, which is not yet manageable as a machine pool resource. Choose a different name.",
+		)
+	}
+}
+
+// machinePoolConfigValidator enforces cross-attribute rules.
+type machinePoolConfigValidator struct{}
+
+func (machinePoolConfigValidator) Description(_ context.Context) string {
+	return "validates autoscaling vs replicas mutual exclusivity and secure_boot with bare metal"
+}
+
+func (machinePoolConfigValidator) MarkdownDescription(ctx context.Context) string {
+	return "validates autoscaling vs replicas mutual exclusivity and secure_boot with bare metal"
+}
+
+func (v *machinePoolConfigValidator) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var config MachinePoolState
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	secureBoot := false
+	if !config.GCP.IsNull() && !config.GCP.IsUnknown() {
+		if sb, ok := config.GCP.Attributes()["secure_boot"].(types.Bool); ok && !sb.IsNull() && !sb.IsUnknown() && sb.ValueBool() {
+			secureBoot = true
+		}
+	}
+	instanceType := config.InstanceType.ValueString()
+	if secureBoot && strings.HasSuffix(instanceType, "-metal") {
+		resp.Diagnostics.AddError(
+			"Invalid machine pool configuration",
+			"Secure Boot is not supported on bare metal instance types (e.g. *-metal).",
+		)
+	}
+}
+
+func (r *MachinePoolResource) ConfigValidators(ctx context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		resourcevalidator.RequiredTogether(
+			path.MatchRoot("autoscaling").AtName("min_replicas"),
+			path.MatchRoot("autoscaling").AtName("max_replicas"),
+		),
+		resourcevalidator.Conflicting(
+			path.MatchRoot("replicas"),
+			path.MatchRoot("autoscaling").AtName("min_replicas"),
+		),
+		resourcevalidator.Conflicting(
+			path.MatchRoot("replicas"),
+			path.MatchRoot("autoscaling").AtName("max_replicas"),
+		),
+		&machinePoolConfigValidator{},
 	}
 }
 
@@ -238,14 +321,22 @@ func (r *MachinePoolResource) buildMachinePoolObject(s *MachinePoolState) (*cmv1
 		ID(s.Name.ValueString()).
 		InstanceType(s.InstanceType.ValueString())
 
-	if s.Autoscaling != nil {
-		autoscaling := cmv1.NewMachinePoolAutoscaling().
-			MinReplicas(int(s.Autoscaling.MinReplicas.ValueInt64())).
-			MaxReplicas(int(s.Autoscaling.MaxReplicas.ValueInt64()))
-		builder.Autoscaling(autoscaling)
-	} else {
+	hasAutoscaling := false
+	if !s.Autoscaling.IsNull() && !s.Autoscaling.IsUnknown() {
+		attrs := s.Autoscaling.Attributes()
+		minVal, okMin := attrs["min_replicas"].(types.Int64)
+		maxVal, okMax := attrs["max_replicas"].(types.Int64)
+		if okMin && okMax && !minVal.IsNull() && !minVal.IsUnknown() && !maxVal.IsNull() && !maxVal.IsUnknown() {
+			autoscaling := cmv1.NewMachinePoolAutoscaling().
+				MinReplicas(int(minVal.ValueInt64())).
+				MaxReplicas(int(maxVal.ValueInt64()))
+			builder.Autoscaling(autoscaling)
+			hasAutoscaling = true
+		}
+	}
+	if !hasAutoscaling {
 		replicas := 3
-		if !s.Replicas.IsNull() {
+		if !s.Replicas.IsNull() && !s.Replicas.IsUnknown() {
 			replicas = int(s.Replicas.ValueInt64())
 		}
 		builder.Replicas(replicas)
@@ -286,8 +377,10 @@ func (r *MachinePoolResource) buildMachinePoolObject(s *MachinePoolState) (*cmv1
 	if !s.RootVolumeSize.IsNull() && s.RootVolumeSize.ValueInt64() > 0 {
 		builder.RootVolume(cmv1.NewRootVolume().GCP(cmv1.NewGCPVolume().Size(int(s.RootVolumeSize.ValueInt64()))))
 	}
-	if s.GCP != nil && !s.GCP.SecureBoot.IsNull() {
-		builder.GCP(cmv1.NewGCPMachinePool().SecureBoot(s.GCP.SecureBoot.ValueBool()))
+	if !s.GCP.IsNull() && !s.GCP.IsUnknown() {
+		if sb, ok := s.GCP.Attributes()["secure_boot"].(types.Bool); ok && !sb.IsNull() && !sb.IsUnknown() && sb.ValueBool() {
+			builder.GCP(cmv1.NewGCPMachinePool().SecureBoot(true))
+		}
 	}
 
 	return builder.Build()
@@ -299,10 +392,13 @@ func (r *MachinePoolResource) populateState(obj *cmv1.MachinePool, state *Machin
 	state.InstanceType = types.StringValue(obj.InstanceType())
 	state.Replicas = types.Int64Value(int64(obj.Replicas()))
 	if obj.Autoscaling() != nil {
-		state.Autoscaling = &AutoscalingState{
-			MinReplicas: types.Int64Value(int64(obj.Autoscaling().MinReplicas())),
-			MaxReplicas: types.Int64Value(int64(obj.Autoscaling().MaxReplicas())),
-		}
+		a := obj.Autoscaling()
+		state.Autoscaling, _ = types.ObjectValue(autoscalingAttrTypes, map[string]attr.Value{
+			"min_replicas": types.Int64Value(int64(a.MinReplicas())),
+			"max_replicas": types.Int64Value(int64(a.MaxReplicas())),
+		})
+	} else {
+		state.Autoscaling = types.ObjectNull(autoscalingAttrTypes)
 	}
 	if obj.AvailabilityZones() != nil && len(obj.AvailabilityZones()) > 0 {
 		azList, _ := types.ListValueFrom(context.Background(), types.StringType, obj.AvailabilityZones())
@@ -313,6 +409,10 @@ func (r *MachinePoolResource) populateState(obj *cmv1.MachinePool, state *Machin
 		state.Labels = labelMap
 	}
 	if obj.GCP() != nil {
-		state.GCP = &GCPMachinePoolState{SecureBoot: types.BoolValue(obj.GCP().SecureBoot())}
+		state.GCP, _ = types.ObjectValue(gcpAttrTypes, map[string]attr.Value{
+			"secure_boot": types.BoolValue(obj.GCP().SecureBoot()),
+		})
+	} else {
+		state.GCP = types.ObjectNull(gcpAttrTypes)
 	}
 }

@@ -20,6 +20,7 @@ vendor/
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+*.backup
 .terraform.tfstate.lock.info
 crash.log
 crash.*.log

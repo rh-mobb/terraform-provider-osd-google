@@ -1,5 +1,16 @@
-# OSD cluster using Shared VPC
-# WIF config managed by terraform/wif_config/. Uses data source + wif_gcp module.
+# OSD cluster with Workload Identity Federation (WIF)
+#
+# WIF allows OSD to assume GCP service account credentials without storing keys.
+# WIF config is managed by terraform/wif_config/ (applied automatically by Makefile).
+# This config looks up the WIF config by display_name and provisions GCP IAM + cluster.
+#
+# Prerequisites:
+#   - OCM token (OSDGOOGLE_TOKEN or ocm_token variable)
+#   - GCP project with WIF prerequisites (see OSD documentation)
+#   - Application Default Credentials (gcloud auth application-default login)
+#
+# Usage: make example.cluster
+# Both configs use cluster_name; display_name is "${cluster_name}-wif".
 
 data "osdgoogle_wif_config" "wif" {
   display_name = "${var.cluster_name}-wif"
@@ -28,23 +39,25 @@ module "wif_gcp" {
   federated_project_number = try(data.osdgoogle_wif_config.wif.gcp.federated_project_number, "") != "" ? data.osdgoogle_wif_config.wif.gcp.federated_project_number : tostring(data.google_project.project.number)
 }
 
-resource "osdgoogle_cluster" "shared_vpc_cluster" {
-  depends_on = [module.wif_gcp]
-
+resource "osdgoogle_cluster" "cluster" {
+  depends_on     = [module.wif_gcp]
   name           = var.cluster_name
   cloud_region   = "us-central1"
   gcp_project_id = var.gcp_project_id
-  wif_config_id  = data.osdgoogle_wif_config.wif.id
   version        = var.openshift_version
+  wif_config_id  = data.osdgoogle_wif_config.wif.id
   compute_nodes  = 3
   ccs_enabled    = true
 
-  gcp_network = {
-    vpc_name             = var.vpc_name
-    vpc_project_id       = var.vpc_host_project_id
-    compute_subnet       = var.compute_subnet
-    control_plane_subnet = var.control_plane_subnet
+  lifecycle {
+    prevent_destroy = false
   }
+}
+
+resource "osdgoogle_cluster_admin" "admin" {
+  cluster_id = osdgoogle_cluster.cluster.id
+  username   = "admin"
+  password   = var.admin_password != "" ? var.admin_password : null
 }
 
 locals {
@@ -54,7 +67,7 @@ locals {
 resource "osdgoogle_machine_pool" "pools" {
   for_each = local.machine_pools_map
 
-  cluster_id    = osdgoogle_cluster.shared_vpc_cluster.id
+  cluster_id    = osdgoogle_cluster.cluster.id
   name          = each.value.name
   instance_type = each.value.instance_type
 

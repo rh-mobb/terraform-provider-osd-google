@@ -211,5 +211,6 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 		datasources.NewVersions,
 		datasources.NewMachineTypes,
 		datasources.NewRegions,
+		wif_config.NewDataSource,
 	}
 }

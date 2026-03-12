@@ -32,21 +32,21 @@ var _ = Describe("Machine pool resource", func() {
 			CombineHandlers(
 				VerifyRequest(http.MethodPost, "/api/clusters_mgmt/v1/clusters/cluster-123/machine_pools"),
 				RespondWithJSON(http.StatusCreated, `{
-				  "id": "worker",
+				  "id": "compute",
 				  "instance_type": "custom-4-16384",
 				  "replicas": 3
 				}`),
 			),
 			CombineHandlers(
-				VerifyRequest(http.MethodGet, "/api/clusters_mgmt/v1/clusters/cluster-123/machine_pools/worker"),
+				VerifyRequest(http.MethodGet, "/api/clusters_mgmt/v1/clusters/cluster-123/machine_pools/compute"),
 				RespondWithJSON(http.StatusOK, `{
-				  "id": "worker",
+				  "id": "compute",
 				  "instance_type": "custom-4-16384",
 				  "replicas": 3
 				}`),
 			),
 			CombineHandlers(
-				VerifyRequest(http.MethodDelete, "/api/clusters_mgmt/v1/clusters/cluster-123/machine_pools/worker"),
+				VerifyRequest(http.MethodDelete, "/api/clusters_mgmt/v1/clusters/cluster-123/machine_pools/compute"),
 				RespondWithJSON(http.StatusNoContent, ""),
 			),
 		)
@@ -54,7 +54,7 @@ var _ = Describe("Machine pool resource", func() {
 		Terraform.Source(`
 		  resource "osdgoogle_machine_pool" "pool" {
 		    cluster_id     = "cluster-123"
-		    name           = "worker"
+		    name           = "compute"
 		    instance_type  = "custom-4-16384"
 		    replicas       = 3
 		  }
@@ -63,7 +63,7 @@ var _ = Describe("Machine pool resource", func() {
 		Expect(applyOutput.ExitCode).To(BeZero())
 
 		resource := Terraform.Resource("osdgoogle_machine_pool", "pool")
-		Expect(resource).To(MatchJQ(`.attributes.id`, "worker"))
+		Expect(resource).To(MatchJQ(`.attributes.id`, "compute"))
 
 		destroyOutput := Terraform.Destroy()
 		Expect(destroyOutput.ExitCode).To(BeZero())

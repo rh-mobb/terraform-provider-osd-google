@@ -1,0 +1,52 @@
+# OCM offline token. Prefer OSDGOOGLE_TOKEN env var for local dev:
+# export OSDGOOGLE_TOKEN="your-token"
+#ocm_token = ""
+
+# GCP project ID for the cluster (required)
+gcp_project_id = "my-gcp-project"
+
+# Name of the OSD cluster (must match terraform/wif_config cluster_name)
+# cluster_name = "my-wif-cluster"
+
+# OpenShift version (x.y.z). Used for cluster and WIF; WIF roles use x.y only.
+openshift_version = "4.21.3"
+
+# Cluster admin password. Omit or leave empty to auto-generate.
+#admin_password = ""
+
+# Additional machine pools (optional). If autoscaling_enabled = true, set min_replicas and max_replicas. If false, set replicas.
+# machine_pools = [
+#   {
+#     name               = "compute"
+#     instance_type      = "n2-standard-4"
+#     autoscaling_enabled = false
+#     replicas           = 3
+#   },
+#   {
+#     name                = "autoscale"
+#     instance_type       = "n2-standard-4"
+#     autoscaling_enabled = true
+#     min_replicas        = 2
+#     max_replicas        = 10
+#     root_volume_size   = 128
+#   },
+#   {
+#     name               = "gpu"
+#     instance_type      = "n1-standard-4"
+#     autoscaling_enabled = false
+#     replicas           = 1
+#     labels = {
+#       workload = "gpu"
+#     }
+#     taints = [
+#       {
+#         key   = "nvidia.com/gpu"
+#         value = "true"
+#         effect = "NoSchedule"
+#       }
+#     ]
+#   }
+# ]
+
+# GCP authentication: use Application Default Credentials for project lookup
+# gcloud auth application-default login

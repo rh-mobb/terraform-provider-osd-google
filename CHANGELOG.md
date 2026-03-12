@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `osdgoogle_wif_config` resource for Workload Identity Federation
 - `osdgoogle_machine_pool` resource
 - Data sources: `osdgoogle_versions`, `osdgoogle_machine_types`, `osdgoogle_regions`
-- Examples: cluster_basic, cluster_wif, cluster_psc, cluster_shared_vpc
+- Examples: cluster, cluster_psc, cluster_shared_vpc, cluster_with_vpc (all use WIF)
 
 ### Changed
 
