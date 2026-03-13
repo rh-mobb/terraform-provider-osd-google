@@ -19,6 +19,8 @@ issues:
   exclude-dirs:
     - references
     - reference
+    - subsystem
+    - acceptance
   exclude-rules:
     - path: _test\.go
       linters:
