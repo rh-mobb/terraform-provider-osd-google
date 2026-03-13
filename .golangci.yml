@@ -1,0 +1,25 @@
+# golangci-lint configuration for Terraform Provider for OSD on Google Cloud
+# https://golangci-lint.run/usage/configuration/
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+linters-settings:
+  govet:
+    enable:
+      - shadow
+
+issues:
+  exclude-dirs:
+    - references
+    - reference
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck

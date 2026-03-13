@@ -20,10 +20,10 @@ Thank you for your interest in contributing! This document provides guidelines f
 2. **Develop** your changes following the project's conventions (see [AGENTS.md](AGENTS.md) for AI agent guidance).
 3. **Test** locally:
    ```bash
+   make fmt        # Format Go and Terraform (runs fmt_go + fmt_tf)
    make unit-test
-   make fmt
    make build
-   make docs   # If you changed schema
+   make docs       # If you changed schema
    ```
 4. **Commit** with clear, imperative messages (e.g., "Add private cluster support").
 5. **Push** your branch and open a PR against `main`.
@@ -40,8 +40,9 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 ## Code Style
 
+- **Format:** Run `make fmt` before every PR. This runs both `make fmt_go` (Go) and `make fmt_tf` (Terraform).
 - **Go:** Use `gofmt`; run `make fmt_go`.
-- **Terraform:** Use `terraform fmt`; run `make fmt_tf`.
+- **Terraform:** Use `terraform fmt`; run `make fmt_tf`. CI checks `terraform`, `examples`, `tests`, and `modules`.
 - Follow conventions in existing code and [AGENTS.md](AGENTS.md).
 
 ## Code of Conduct

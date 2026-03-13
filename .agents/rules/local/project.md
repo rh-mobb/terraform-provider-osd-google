@@ -10,19 +10,19 @@ Align with Red Hat's terraform-provider-rhcs for seamless handoff.
 
 ## Commit Format
 
-RHCS uses structured commit messages:
+Use structured commit messages:
 
 ```
-[JIRA-TICKET] | [TYPE]: <MESSAGE>
+[#123] | [TYPE]: <MESSAGE>
 
 [optional BODY]
 ```
 
-**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `build`, `ci`, `perf`
-
-- `fix:` — patches a bug
-- `feat:` — introduces a new feature
-- Others: `build`, `ci`, `docs`, `perf`, `refactor`, `style`, `test`
+- **Issue reference:** Use GitHub issue number (e.g. `#123`) when the commit addresses an issue. Omit if the change has no related issue.
+- **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `build`, `ci`, `perf`
+  - `fix:` — patches a bug
+  - `feat:` — introduces a new feature
+  - Others: `build`, `ci`, `docs`, `perf`, `refactor`, `style`, `test`
 
 ## Operational Safety
 
@@ -46,6 +46,16 @@ Always **ask the user to run** these commands and provide the exact command to c
 - `make fmt` — format Go and Terraform files
 - `make generate` — run `go generate ./...` (docs, mocks)
 - `make check-gen` — ensure generated files are committed (CI)
+
+## Versioning
+
+The project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (semver).
+
+- **Initial development:** Start at `0.1.0`; remain in `0.x.y` until the API is considered stable.
+- **Patch** (`0.1.0` → `0.1.1`): Bug fixes, backwards-compatible.
+- **Minor** (`0.1.x` → `0.2.0`): New features, backwards-compatible.
+- **Major** (`0.x.y` → `1.0.0`): Breaking changes; move to `1.0.0` when the public API is stable and committed.
+- **Release tags:** Use `v` prefix (e.g. `v0.1.0`). Push tags to trigger the release workflow.
 
 ## Development Workflow
 
@@ -71,5 +81,5 @@ The `dev_overrides` block redirects Terraform to the local binary.
 
 ## Code Style
 
-- Use `make fmt_go` and `make fmt_tf` before committing
+- All PRs must run `make fmt` before submission. This runs both `make fmt_go` (Go) and `make fmt_tf` (Terraform). CI enforces format checks; unformatted code will fail the build.
 - Follow Effective Go and Terraform Plugin Framework docs

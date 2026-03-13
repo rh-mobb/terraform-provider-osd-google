@@ -1,11 +1,14 @@
 output "cluster_id" {
-  value = osdgoogle_cluster.cluster.id
+  value       = module.cluster.cluster_id
+  description = "OCM cluster ID"
 }
 
 output "api_url" {
-  value = osdgoogle_cluster.cluster.api_url
+  value       = module.cluster.api_url
+  description = "Kubernetes API URL"
 }
 
 output "console_url" {
-  value = osdgoogle_cluster.cluster.console_url
+  value       = module.cluster.console_url
+  description = "OpenShift web console URL"
 }

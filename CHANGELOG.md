@@ -9,29 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.1.0] - 2025-03-13
+
+### Added
+
 - Terraform provider for OpenShift Dedicated (OSD) on GCP
 - `osdgoogle_cluster` resource with WIF, PSC, Shared VPC, CMEK support
 - `osdgoogle_wif_config` resource for Workload Identity Federation
 - `osdgoogle_machine_pool` resource
-- Data sources: `osdgoogle_versions`, `osdgoogle_machine_types`, `osdgoogle_regions`
-- Examples: cluster, cluster_psc, cluster_shared_vpc, cluster_with_vpc (all use WIF)
-
-### Changed
-
-- (none yet)
-
-### Deprecated
-
-- (none yet)
-
-### Removed
-
-- (none yet)
-
-### Fixed
-
-- (none yet)
-
-### Security
-
-- (none yet)
+- `osdgoogle_cluster_admin`, `osdgoogle_cluster_waiter`, `osdgoogle_dns_domain` resources
+- Data sources: `osdgoogle_versions`, `osdgoogle_machine_types`, `osdgoogle_regions`, `osdgoogle_wif_config`
+- Examples: cluster, cluster_psc, cluster_shared_vpc, cluster_with_vpc, cluster_baremetal, cluster_multi_az (all use WIF)
+- Terraform Registry release workflow (GoReleaser, GPG signing)

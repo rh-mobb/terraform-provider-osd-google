@@ -46,14 +46,26 @@ jobs:
 
       - name: Terraform fmt check
         run: |
-          terraform fmt -check -recursive examples 2>/dev/null || true
-          terraform fmt -check -recursive tests 2>/dev/null || true
+          for dir in terraform examples tests modules; do
+            if [ -d "$dir" ] && terraform fmt -check -recursive "$dir"; then
+              true
+            elif [ -d "$dir" ]; then
+              echo "Terraform files in $dir need formatting. Run: make fmt_tf"
+              exit 1
+            fi
+          done
+
+      - name: Lint (golangci-lint)
+        run: make lint_go
 
       - name: Unit tests
         run: make unit-test
 
       - name: Build
         run: make build
+
+      - name: Terraform validate
+        run: make lint_tf
 
       - name: Docs
         run: make docs

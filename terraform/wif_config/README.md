@@ -1,6 +1,6 @@
 # WIF Config
 
-Creates a Workload Identity Federation (WIF) config in OCM. This config is shared infrastructure required by all OSD cluster examples. It must be applied **in a separate Terraform run** before any example — see [Why a separate apply?](#why-a-separate-apply) below.
+Creates a Workload Identity Federation (WIF) config in OCM using the [osd-wif-config](../../modules/osd-wif-config) module. This config is shared infrastructure required by all OSD cluster examples. It must be applied **in a separate Terraform run** before any example — see [Why a separate apply?](#why-a-separate-apply) below.
 
 The Makefile orchestrates this automatically: `make example.<name>` applies `terraform/wif_config/` first, then the example; `make example.<name>.destroy` destroys the example first, then the WIF config.
 

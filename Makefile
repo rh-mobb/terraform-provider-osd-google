@@ -44,9 +44,10 @@ help:
 	@echo "  acceptance-test   Run acceptance tests (requires OCM credentials)"
 	@echo "  test, tests       Run unit + subsystem tests"
 	@echo "  fmt               Format Go and Terraform code"
+	@echo "  lint              Run Go lint (golangci-lint) and Terraform validate"
 	@echo "  docs              Regenerate provider documentation"
 	@echo "  clean             Remove build artifacts"
-	@echo "  tools             Install dev tools (ginkgo, mockgen, tfplugindocs)"
+	@echo "  tools             Install dev tools (ginkgo, mockgen, tfplugindocs, golangci-lint)"
 	@echo "  generate          Run go generate"
 	@echo "  references        Clone or update reference repos for AI agent context"
 	@echo ""
@@ -83,6 +84,9 @@ build:
 # Example directories (discovered from examples/*)
 EXAMPLES_DIRS := $(wildcard examples/*/main.tf)
 EXAMPLES := $(sort $(patsubst examples/%/main.tf,%,$(EXAMPLES_DIRS)))
+
+# Module directories (discovered from modules/*)
+MODULES := $(sort $(notdir $(wildcard modules/*/)))
 
 WIF_CONFIG_DIR := terraform/wif_config
 
@@ -229,6 +233,29 @@ fmt_tf:
 .PHONY: fmt
 fmt: fmt_go fmt_tf
 
+.PHONY: lint_go
+lint_go:
+	golangci-lint run ./...
+
+.PHONY: lint_tf
+lint_tf: install
+	@rm -f $(WIF_CONFIG_DIR)/.terraform.lock.hcl
+	@for ex in $(EXAMPLES); do rm -f examples/$$ex/.terraform.lock.hcl; done
+	@for mod in $(MODULES); do rm -f modules/$$mod/.terraform.lock.hcl; done
+	@echo "Validating terraform/wif_config..."
+	@cd $(WIF_CONFIG_DIR) && terraform init -backend=false -input=false -upgrade && terraform validate
+	@for ex in $(EXAMPLES); do \
+	  echo "Validating examples/$$ex..."; \
+	  cd examples/$$ex && terraform init -backend=false -input=false -upgrade && terraform validate && cd $(CURDIR) || exit 1; \
+	done
+	@for mod in $(MODULES); do \
+	  echo "Validating modules/$$mod..."; \
+	  cd modules/$$mod && terraform init -backend=false -input=false -upgrade && terraform validate && cd $(CURDIR) || exit 1; \
+	done
+
+.PHONY: lint
+lint: lint_go lint_tf
+
 .PHONY: clean
 clean:
 	rm -rf "$(OSDGOOGLE_LOCAL_DIR)"
@@ -247,6 +274,7 @@ tools:
 	go install github.com/onsi/ginkgo/v2/ginkgo@v2.17.1
 	go install go.uber.org/mock/mockgen@v0.3.0
 	go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.16.0
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0
 
 .PHONY: docs
 docs:
