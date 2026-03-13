@@ -234,8 +234,11 @@ fmt_tf:
 fmt: fmt_go fmt_tf
 
 .PHONY: lint_go
+# Restrict scope: subsystem and acceptance use Ginkgo/ocm-sdk-go/testing. Golangci-lint's
+# typecheck can fail on them in CI (undefined symbols) while passing locally. Lint only
+# the provider code; subsystem/acceptance are exercised by make subsystem-test/acceptance-test.
 lint_go:
-	golangci-lint run ./...
+	golangci-lint run ./provider/... ./internal/... .
 
 .PHONY: lint_tf
 lint_tf: install
