@@ -234,11 +234,8 @@ fmt_tf:
 fmt: fmt_go fmt_tf
 
 .PHONY: lint_go
-# Restrict scope: subsystem and acceptance use Ginkgo/ocm-sdk-go/testing. Golangci-lint's
-# typecheck can fail on them in CI (undefined symbols) while passing locally. Lint only
-# the provider code; subsystem/acceptance are exercised by make subsystem-test/acceptance-test.
 lint_go:
-	golangci-lint run ./provider/... ./internal/... .
+	golangci-lint run ./provider/... ./build/... ./logging/... .
 
 .PHONY: lint_tf
 lint_tf: install
@@ -277,7 +274,7 @@ tools:
 	go install github.com/onsi/ginkgo/v2/ginkgo@v2.17.1
 	go install go.uber.org/mock/mockgen@v0.3.0
 	go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.16.0
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.7.2
 
 .PHONY: docs
 docs:
