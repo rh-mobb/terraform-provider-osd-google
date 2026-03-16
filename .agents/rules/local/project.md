@@ -77,7 +77,14 @@ The `dev_overrides` block redirects Terraform to the local binary.
 
 - Use `tfplugindocs` via `go:generate` to generate provider docs
 - Keep examples in `examples/` per resource
-- Run `make docs` (or equivalent) after schema changes
+- **When changing schema, resources, data sources, guides, or templates:** run `make docs` and commit the updated `docs/`. CI fails if `docs/` is out of date.
+- **Always keep docs in sync with code changes** — do not leave documentation stale.
+
+## Changelog
+
+- **When making user-facing changes:** add an entry under `## [Unreleased]` in [CHANGELOG.md](../CHANGELOG.md).
+- Use categories: Added, Changed, Deprecated, Removed, Fixed, Security.
+- Describe changes clearly for downstream users.
 
 ## Code Style
 

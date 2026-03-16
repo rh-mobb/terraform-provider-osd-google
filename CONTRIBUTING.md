@@ -23,7 +23,7 @@ Thank you for your interest in contributing! This document provides guidelines f
    make fmt        # Format Go and Terraform (runs fmt_go + fmt_tf)
    make unit-test
    make build
-   make docs       # If you changed schema
+   make docs       # If you changed schema or templates (CI fails if docs/ is stale)
    ```
 4. **Commit** with clear, imperative messages (e.g., "Add private cluster support").
 5. **Push** your branch and open a PR against `main`.
@@ -41,6 +41,7 @@ Thank you for your interest in contributing! This document provides guidelines f
 ## Code Style
 
 - **Format:** Run `make fmt` before every PR. This runs both `make fmt_go` (Go) and `make fmt_tf` (Terraform).
+- **Docs:** Run `make docs` when you change provider schema, resources, data sources, or templates in `templates/`. CI fails if `docs/` is out of date.
 - **Go:** Use `gofmt`; run `make fmt_go`.
 - **Terraform:** Use `terraform fmt`; run `make fmt_tf`. CI checks `terraform`, `examples`, `tests`, and `modules`.
 - Follow conventions in existing code and [AGENTS.md](AGENTS.md).

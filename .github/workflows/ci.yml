@@ -70,5 +70,6 @@ jobs:
         run: make lint_tf
 
       - name: Docs
-        run: make docs
-        continue-on-error: true
+        run: |
+          make docs || (echo "Docs generation failed. Fix any errors and run 'make docs' locally." && exit 1)
+          git diff --exit-code docs/ || (echo "Docs are out of date. Run 'make docs' and commit the changes." && exit 1)

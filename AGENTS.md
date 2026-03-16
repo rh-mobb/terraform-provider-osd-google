@@ -86,6 +86,15 @@ Project-specific rules aligned with Red Hat's terraform-provider-rhcs. Local rul
 
 All PRs must have run `make fmt` before submission. This runs both `make fmt_go` (Go) and `make fmt_tf` (Terraform). CI enforces format checks for both; unformatted code will fail the build.
 
+Run `make docs` when schema, resources, data sources, or templates change. CI fails if `docs/` is out of date.
+
+## Agent Responsibilities
+
+When making changes to this codebase, AI agents **must**:
+
+- **Keep documentation up to date** — After changing provider schema, resources, data sources, guides, or templates: run `make docs`, then commit the updated `docs/` output. Do not leave docs stale.
+- **Update the changelog** — For any user-facing change (new features, bug fixes, breaking changes), add an entry under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md). Use the categories: Added, Changed, Deprecated, Removed, Fixed, Security. Describe the change clearly for downstream users.
+
 ## References
 
 The `references/` folder contains upstream source repositories and API specifications cloned locally to provide AI agents with rich, offline context. This folder is gitignored and must be cloned manually — see the [README](README.md#ai-agent-development) for instructions.
