@@ -8,16 +8,11 @@
 #   - GCP project with WIF prerequisites (see OSD documentation)
 #   - Application Default Credentials (gcloud auth application-default login)
 
-data "google_project" "project" {
-  project_id = var.gcp_project_id
-}
+module "wif_config" {
+  source = "../../modules/osd-wif-config"
 
-resource "osdgoogle_wif_config" "wif" {
-  display_name      = "${var.cluster_name}-wif"
+  gcp_project_id    = var.gcp_project_id
+  cluster_name      = var.cluster_name
   openshift_version = var.openshift_version
-  gcp = {
-    project_id     = var.gcp_project_id
-    project_number = tostring(data.google_project.project.number)
-    role_prefix    = replace(replace(coalesce(var.role_prefix, var.cluster_name), "-", ""), "_", "")
-  }
+  role_prefix       = var.role_prefix
 }

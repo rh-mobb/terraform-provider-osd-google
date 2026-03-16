@@ -242,7 +242,6 @@ func (r *MachinePoolResource) Create(ctx context.Context, req resource.CreateReq
 	obj := addResp.Body()
 
 	r.populateState(obj, &plan)
-	plan.ClusterID = plan.ClusterID
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -265,7 +264,6 @@ func (r *MachinePoolResource) Read(ctx context.Context, req resource.ReadRequest
 	obj := getResp.Body()
 
 	r.populateState(obj, &state)
-	state.ClusterID = state.ClusterID
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 

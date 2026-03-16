@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -211,21 +212,19 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 					"type":                        schema.StringAttribute{Optional: true},
 				},
 			},
-			"private_service_connect": schema.SingleNestedAttribute{
-				Description: "Private Service Connect configuration.",
-				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"service_attachment_subnet": schema.StringAttribute{Required: true},
-				},
+			"private_service_connect": schema.ObjectAttribute{
+				Description:    "Private Service Connect configuration.",
+				Optional:       true,
+				AttributeTypes: privateServiceConnectObjectType.AttrTypes,
 			},
-			"gcp_network": schema.SingleNestedAttribute{
+			"gcp_network": schema.ObjectAttribute{
 				Description: "GCP network configuration for BYO VPC. Set vpc_project_id only for Shared VPC (host project differs from cluster project).",
 				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"vpc_name":             schema.StringAttribute{Required: true},
-					"vpc_project_id":       schema.StringAttribute{Optional: true, Computed: true, Description: "Host project ID for Shared VPC. Omit when the VPC is in the same project as the cluster."},
-					"compute_subnet":       schema.StringAttribute{Required: true},
-					"control_plane_subnet": schema.StringAttribute{Required: true},
+				AttributeTypes: map[string]attr.Type{
+					"vpc_name":             types.StringType,
+					"vpc_project_id":       types.StringType,
+					"compute_subnet":       types.StringType,
+					"control_plane_subnet": types.StringType,
 				},
 			},
 			"gcp_encryption_key": schema.SingleNestedAttribute{
@@ -238,40 +237,25 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 					"key_ring":                schema.StringAttribute{Required: true},
 				},
 			},
-			"security": schema.SingleNestedAttribute{
-				Description: "GCP security settings.",
-				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"secure_boot": schema.BoolAttribute{Optional: true},
-				},
+			"security": schema.ObjectAttribute{
+				Description:    "GCP security settings.",
+				Optional:       true,
+				AttributeTypes: securityObjectType.AttrTypes,
 			},
-			"network": schema.SingleNestedAttribute{
-				Description: "Network CIDR configuration.",
-				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"machine_cidr": schema.StringAttribute{Optional: true},
-					"service_cidr": schema.StringAttribute{Optional: true},
-					"pod_cidr":     schema.StringAttribute{Optional: true},
-					"host_prefix":  schema.Int64Attribute{Optional: true},
-				},
+			"network": schema.ObjectAttribute{
+				Description:    "Network CIDR configuration.",
+				Optional:       true,
+				AttributeTypes: networkObjectType.AttrTypes,
 			},
-			"autoscaling": schema.SingleNestedAttribute{
-				Description: "Autoscaling configuration for worker nodes.",
-				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"min_replicas": schema.Int64Attribute{Required: true},
-					"max_replicas": schema.Int64Attribute{Required: true},
-				},
+			"autoscaling": schema.ObjectAttribute{
+				Description:    "Autoscaling configuration for worker nodes.",
+				Optional:       true,
+				AttributeTypes: autoscalingObjectType.AttrTypes,
 			},
-			"proxy": schema.SingleNestedAttribute{
-				Description: "Proxy configuration.",
-				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"http_proxy":              schema.StringAttribute{Optional: true},
-					"https_proxy":             schema.StringAttribute{Optional: true},
-					"no_proxy":                schema.StringAttribute{Optional: true},
-					"additional_trust_bundle": schema.StringAttribute{Optional: true},
-				},
+			"proxy": schema.ObjectAttribute{
+				Description:    "Proxy configuration.",
+				Optional:       true,
+				AttributeTypes: proxyObjectType.AttrTypes,
 			},
 			"state": schema.StringAttribute{
 				Description: "Current state of the cluster.",
@@ -629,24 +613,35 @@ func (r *ClusterResource) buildClusterObject(ctx context.Context, s *ClusterStat
 			}
 		}
 
-		if s.PrivateServiceConnect != nil {
-			gcpBuilder.PrivateServiceConnect(
-				cmv1.NewGcpPrivateServiceConnect().ServiceAttachmentSubnet(s.PrivateServiceConnect.ServiceAttachmentSubnet.ValueString()),
-			)
+		if !s.PrivateServiceConnect.IsNull() && !s.PrivateServiceConnect.IsUnknown() {
+			if v, ok := s.PrivateServiceConnect.Attributes()["service_attachment_subnet"].(types.String); ok && common.HasValue(v) {
+				gcpBuilder.PrivateServiceConnect(
+					cmv1.NewGcpPrivateServiceConnect().ServiceAttachmentSubnet(v.ValueString()),
+				)
+			}
 		}
-		if s.Security != nil && !s.Security.SecureBoot.IsNull() {
-			gcpBuilder.Security(cmv1.NewGcpSecurity().SecureBoot(s.Security.SecureBoot.ValueBool()))
+		if !s.Security.IsNull() && !s.Security.IsUnknown() {
+			if v, ok := s.Security.Attributes()["secure_boot"].(types.Bool); ok && !v.IsNull() {
+				gcpBuilder.Security(cmv1.NewGcpSecurity().SecureBoot(v.ValueBool()))
+			}
 		}
 		builder.GCP(gcpBuilder)
 	}
 
-	if s.GCPNetwork != nil {
-		netBuilder := cmv1.NewGCPNetwork().
-			VPCName(s.GCPNetwork.VPCName.ValueString()).
-			ComputeSubnet(s.GCPNetwork.ComputeSubnet.ValueString()).
-			ControlPlaneSubnet(s.GCPNetwork.ControlPlaneSubnet.ValueString())
-		if !s.GCPNetwork.VPCProjectID.IsNull() && s.GCPNetwork.VPCProjectID.ValueString() != "" {
-			netBuilder.VPCProjectID(s.GCPNetwork.VPCProjectID.ValueString())
+	if !s.GCPNetwork.IsNull() && !s.GCPNetwork.IsUnknown() {
+		attrs := s.GCPNetwork.Attributes()
+		netBuilder := cmv1.NewGCPNetwork()
+		if v, ok := attrs["vpc_name"].(types.String); ok && common.HasValue(v) {
+			netBuilder.VPCName(v.ValueString())
+		}
+		if v, ok := attrs["compute_subnet"].(types.String); ok && common.HasValue(v) {
+			netBuilder.ComputeSubnet(v.ValueString())
+		}
+		if v, ok := attrs["control_plane_subnet"].(types.String); ok && common.HasValue(v) {
+			netBuilder.ControlPlaneSubnet(v.ValueString())
+		}
+		if v, ok := attrs["vpc_project_id"].(types.String); ok && !v.IsNull() && v.ValueString() != "" {
+			netBuilder.VPCProjectID(v.ValueString())
 		}
 		builder.GCPNetwork(netBuilder)
 	}
@@ -660,19 +655,20 @@ func (r *ClusterResource) buildClusterObject(ctx context.Context, s *ClusterStat
 		builder.GCPEncryptionKey(keyBuilder)
 	}
 
-	if s.Network != nil {
+	if !s.Network.IsNull() && !s.Network.IsUnknown() {
+		attrs := s.Network.Attributes()
 		netBuilder := cmv1.NewNetwork()
-		if common.HasValue(s.Network.MachineCIDR) {
-			netBuilder.MachineCIDR(s.Network.MachineCIDR.ValueString())
+		if v, ok := attrs["machine_cidr"].(types.String); ok && common.HasValue(v) {
+			netBuilder.MachineCIDR(v.ValueString())
 		}
-		if common.HasValue(s.Network.ServiceCIDR) {
-			netBuilder.ServiceCIDR(s.Network.ServiceCIDR.ValueString())
+		if v, ok := attrs["service_cidr"].(types.String); ok && common.HasValue(v) {
+			netBuilder.ServiceCIDR(v.ValueString())
 		}
-		if common.HasValue(s.Network.PodCIDR) {
-			netBuilder.PodCIDR(s.Network.PodCIDR.ValueString())
+		if v, ok := attrs["pod_cidr"].(types.String); ok && common.HasValue(v) {
+			netBuilder.PodCIDR(v.ValueString())
 		}
-		if !s.Network.HostPrefix.IsNull() {
-			netBuilder.HostPrefix(int(s.Network.HostPrefix.ValueInt64()))
+		if v, ok := attrs["host_prefix"].(types.Int64); ok && !v.IsNull() {
+			netBuilder.HostPrefix(int(v.ValueInt64()))
 		}
 		if !netBuilder.Empty() {
 			builder.Network(netBuilder)
@@ -680,12 +676,20 @@ func (r *ClusterResource) buildClusterObject(ctx context.Context, s *ClusterStat
 	}
 
 	nodesBuilder := cmv1.NewClusterNodes()
-	if s.Autoscaling != nil {
-		autoscaling := cmv1.NewMachinePoolAutoscaling().
-			MinReplicas(int(s.Autoscaling.MinReplicas.ValueInt64())).
-			MaxReplicas(int(s.Autoscaling.MaxReplicas.ValueInt64()))
-		nodesBuilder.AutoscaleCompute(autoscaling)
-	} else {
+	useAutoscaling := false
+	if !s.Autoscaling.IsNull() && !s.Autoscaling.IsUnknown() {
+		attrs := s.Autoscaling.Attributes()
+		if minV, okMin := attrs["min_replicas"].(types.Int64); okMin && !minV.IsNull() {
+			if maxV, okMax := attrs["max_replicas"].(types.Int64); okMax && !maxV.IsNull() {
+				autoscaling := cmv1.NewMachinePoolAutoscaling().
+					MinReplicas(int(minV.ValueInt64())).
+					MaxReplicas(int(maxV.ValueInt64()))
+				nodesBuilder.AutoscaleCompute(autoscaling)
+				useAutoscaling = true
+			}
+		}
+	}
+	if !useAutoscaling {
 		computeNodes := int64(3)
 		if !s.ComputeNodes.IsNull() {
 			computeNodes = s.ComputeNodes.ValueInt64()
@@ -711,20 +715,20 @@ func (r *ClusterResource) buildClusterObject(ctx context.Context, s *ClusterStat
 		builder.Properties(props)
 	}
 
-	if s.Proxy != nil {
+	if !s.Proxy.IsNull() && !s.Proxy.IsUnknown() {
+		attrs := s.Proxy.Attributes()
 		proxyBuilder := cmv1.NewProxy()
-		if common.HasValue(s.Proxy.HTTPProxy) {
-			proxyBuilder.HTTPProxy(s.Proxy.HTTPProxy.ValueString())
+		if v, ok := attrs["http_proxy"].(types.String); ok && common.HasValue(v) {
+			proxyBuilder.HTTPProxy(v.ValueString())
 		}
-		if common.HasValue(s.Proxy.HTTPSProxy) {
-			proxyBuilder.HTTPSProxy(s.Proxy.HTTPSProxy.ValueString())
+		if v, ok := attrs["https_proxy"].(types.String); ok && common.HasValue(v) {
+			proxyBuilder.HTTPSProxy(v.ValueString())
 		}
-		if common.HasValue(s.Proxy.NoProxy) {
-			proxyBuilder.NoProxy(s.Proxy.NoProxy.ValueString())
+		if v, ok := attrs["no_proxy"].(types.String); ok && common.HasValue(v) {
+			proxyBuilder.NoProxy(v.ValueString())
 		}
-		if common.HasValue(s.Proxy.AdditionalTrustBundle) {
-			// Proxy builder might use AdditionalTrustBundle - check API
-			builder.AdditionalTrustBundle(s.Proxy.AdditionalTrustBundle.ValueString())
+		if v, ok := attrs["additional_trust_bundle"].(types.String); ok && common.HasValue(v) {
+			builder.AdditionalTrustBundle(v.ValueString())
 		}
 		if !proxyBuilder.Empty() {
 			builder.Proxy(proxyBuilder)
@@ -820,17 +824,22 @@ func (r *ClusterResource) populateState(ctx context.Context, cluster *cmv1.Clust
 		state.GCPProjectID = types.StringValue(cluster.GCP().ProjectID())
 	}
 
-	if state.GCPNetwork != nil {
-		if gcpNet := cluster.GCPNetwork(); gcpNet != nil {
-			state.GCPNetwork.VPCName = types.StringValue(gcpNet.VPCName())
-			state.GCPNetwork.ComputeSubnet = types.StringValue(gcpNet.ComputeSubnet())
-			state.GCPNetwork.ControlPlaneSubnet = types.StringValue(gcpNet.ControlPlaneSubnet())
-			if vpcProjectID, ok := gcpNet.GetVPCProjectID(); ok && vpcProjectID != "" {
-				state.GCPNetwork.VPCProjectID = types.StringValue(vpcProjectID)
-			} else {
-				state.GCPNetwork.VPCProjectID = types.StringNull()
-			}
+	if gcpNet := cluster.GCPNetwork(); gcpNet != nil {
+		vpcProjectID := ""
+		if id, ok := gcpNet.GetVPCProjectID(); ok && id != "" {
+			vpcProjectID = id
 		}
+		obj, diags := types.ObjectValue(gcpNetworkObjectType.AttrTypes, map[string]attr.Value{
+			"vpc_name":             types.StringValue(gcpNet.VPCName()),
+			"vpc_project_id":       types.StringValue(vpcProjectID),
+			"compute_subnet":       types.StringValue(gcpNet.ComputeSubnet()),
+			"control_plane_subnet": types.StringValue(gcpNet.ControlPlaneSubnet()),
+		})
+		if !diags.HasError() {
+			state.GCPNetwork = obj
+		}
+	} else {
+		state.GCPNetwork = types.ObjectNull(gcpNetworkObjectType.AttrTypes)
 	}
 
 	return nil

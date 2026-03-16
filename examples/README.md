@@ -79,4 +79,4 @@ terraform plan
 | [cluster_shared_vpc](cluster_shared_vpc) | Cluster using a Shared VPC |
 | [cluster_multi_az](cluster_multi_az) | Multi-AZ cluster across multiple availability zones |
 
-WIF config (`terraform/wif_config/`) is shared infrastructure applied automatically by the Makefile before each example. It creates the WIF config in OCM; the cluster examples then look it up and provision GCP IAM + the cluster. See [terraform/wif_config/README.md](../terraform/wif_config/README.md) for why it runs in a separate apply.
+WIF config (`terraform/wif_config/`) is shared infrastructure applied automatically by the Makefile before each example. It uses the [osd-wif-config](../modules/osd-wif-config) module to create the WIF config in OCM. The cluster examples use the [osd-cluster](../modules/osd-cluster) module, which looks up the WIF config and provisions GCP IAM + the cluster. See [terraform/wif_config/README.md](../terraform/wif_config/README.md) for why it runs in a separate apply.

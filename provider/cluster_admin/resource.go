@@ -193,7 +193,6 @@ func (r *ClusterAdminResource) Create(ctx context.Context, req resource.CreateRe
 
 	// Populate state
 	plan.ID = types.StringValue(idpID)
-	plan.ClusterID = plan.ClusterID
 	plan.Username = types.StringValue(username)
 	plan.Password = types.StringValue(password)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

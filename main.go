@@ -28,7 +28,7 @@ import (
 	"github.com/rh-mobb/terraform-provider-osd-google/provider"
 )
 
-const osdGoogleProviderAddress = "registry.terraform.io/redhat/osd-google"
+const osdGoogleProviderAddress = "registry.terraform.io/rh-mobb/osd-google"
 
 func main() {
 	var debug bool

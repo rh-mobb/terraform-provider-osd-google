@@ -82,6 +82,10 @@ Project-specific rules aligned with Red Hat's terraform-provider-rhcs. Local rul
 - **Globs:** `["**/*"]`
 - **File:** `.agents/rules/local/project.md`
 
+## PR Requirements
+
+All PRs must have run `make fmt` before submission. This runs both `make fmt_go` (Go) and `make fmt_tf` (Terraform). CI enforces format checks for both; unformatted code will fail the build.
+
 ## References
 
 The `references/` folder contains upstream source repositories and API specifications cloned locally to provide AI agents with rich, offline context. This folder is gitignored and must be cloned manually — see the [README](README.md#ai-agent-development) for instructions.

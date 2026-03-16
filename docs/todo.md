@@ -82,3 +82,54 @@ Remaining improvements:
 ### `osdgoogle_regions`
 
 - Add optional `multi_az_only` filter to return only regions that support multiple availability zones (the `CloudRegion` object has a `supports_multi_az` field).
+
+## Publish modules to Terraform Registry (TODO)
+
+The modules in `modules/` (`osd-cluster`, `osd-wif-config`, etc.) are not yet published to the Terraform Registry.
+
+### Do we need to split them into separate Git repos?
+
+**Yes.** The Terraform Registry requires module repositories to use the naming format `terraform-{provider}-{name}`. This repo is `terraform-provider-osd-google`, which is a *provider* repo; the Registry does not publish modules from provider repos. To publish the modules, they must live in separate repositories that match the module naming convention.
+
+### Options
+
+#### Option A: Split into separate repositories (required for Registry publishing)
+
+Create new public GitHub repositories for each module:
+
+- `rh-mobb/terraform-osdgoogle-osd-cluster`
+- `rh-mobb/terraform-osdgoogle-osd-wif-config`
+
+Each repo must:
+
+1. Use the `terraform-{provider}-{name}` naming (e.g. `terraform-osdgoogle-osd-cluster`)
+2. Be public on GitHub
+3. Have standard module structure (root `main.tf`, `variables.tf`, `outputs.tf`, `versions.tf`, `README.md`)
+4. Have at least one semantic version tag (e.g. `v1.0.0`)
+5. Have a clear repository description (used as short description on the Registry)
+
+**Publishing steps:**
+
+1. Copy module content from `modules/osd-cluster` and `modules/osd-wif-config` into each new repo root
+2. Add README, ensure `required_providers` includes `registry.terraform.io/rh-mobb/osd-google`
+3. Create and push tag: `git tag v1.0.0 && git push origin v1.0.0`
+4. Go to [registry.terraform.io → Publish → Upload](https://registry.terraform.io/), sign in with GitHub, select each repo, click **Publish Module**
+5. New versions: push tags (e.g. `v1.0.1`); the Registry webhook picks them up automatically
+
+**References:**
+
+- [Publish modules to the Terraform Registry](https://developer.hashicorp.com/terraform/registry/modules/publish)
+- [Standard module structure](https://developer.hashicorp.com/terraform/language/modules/develop/structure)
+
+#### Option B: Use modules via Git source (no Registry)
+
+Users can reference modules directly from this repo without publishing to the Registry:
+
+```hcl
+module "osd_cluster" {
+  source = "github.com/rh-mobb/terraform-provider-osd-google//modules/osd-cluster?ref=v1.0.0"
+  # ...
+}
+```
+
+This works today and does not require splitting repos.

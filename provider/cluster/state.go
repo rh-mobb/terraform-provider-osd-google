@@ -17,7 +17,55 @@ limitations under the License.
 package cluster
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+// Object types for nested attributes that can receive unknown values (e.g. from variables during terraform validate).
+// Used by schema ObjectAttribute and when populating state from API.
+//
+//nolint:unused // Used by Terraform framework for (de)serialization
+var (
+	networkObjectType = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"machine_cidr": types.StringType,
+			"service_cidr": types.StringType,
+			"pod_cidr":     types.StringType,
+			"host_prefix":  types.Int64Type,
+		},
+	}
+	gcpNetworkObjectType = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"vpc_name":             types.StringType,
+			"vpc_project_id":       types.StringType,
+			"compute_subnet":       types.StringType,
+			"control_plane_subnet": types.StringType,
+		},
+	}
+	securityObjectType = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"secure_boot": types.BoolType,
+		},
+	}
+	privateServiceConnectObjectType = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"service_attachment_subnet": types.StringType,
+		},
+	}
+	autoscalingObjectType = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"min_replicas": types.Int64Type,
+			"max_replicas": types.Int64Type,
+		},
+	}
+	proxyObjectType = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"http_proxy":              types.StringType,
+			"https_proxy":             types.StringType,
+			"no_proxy":                types.StringType,
+			"additional_trust_bundle": types.StringType,
+		},
+	}
 )
 
 // ClusterState holds the Terraform state for an OSD cluster on GCP.
@@ -52,26 +100,26 @@ type ClusterState struct {
 	// GCP authentication (service account key) - used when not using WIF
 	GCPAuthentication *GCPAuthenticationState `tfsdk:"gcp_authentication"`
 
-	// Private Service Connect
-	PrivateServiceConnect *PrivateServiceConnectState `tfsdk:"private_service_connect"`
+	// Private Service Connect (types.Object supports null/unknown during validate)
+	PrivateServiceConnect types.Object `tfsdk:"private_service_connect"`
 
-	// GCP network (Shared VPC)
-	GCPNetwork *GCPNetworkState `tfsdk:"gcp_network"`
+	// GCP network (Shared VPC) - types.Object supports null/unknown during validate
+	GCPNetwork types.Object `tfsdk:"gcp_network"`
 
 	// CMEK encryption
 	GCPEncryptionKey *GCPEncryptionKeyState `tfsdk:"gcp_encryption_key"`
 
-	// GCP security
-	Security *GcpSecurityState `tfsdk:"security"`
+	// GCP security (types.Object supports null/unknown during validate)
+	Security types.Object `tfsdk:"security"`
 
-	// Network CIDRs
-	Network *NetworkState `tfsdk:"network"`
+	// Network CIDRs (types.Object supports null/unknown during validate)
+	Network types.Object `tfsdk:"network"`
 
-	// Autoscaling
-	Autoscaling *AutoscalingState `tfsdk:"autoscaling"`
+	// Autoscaling (types.Object supports null/unknown during validate)
+	Autoscaling types.Object `tfsdk:"autoscaling"`
 
-	// Proxy
-	Proxy *ProxyState `tfsdk:"proxy"`
+	// Proxy (types.Object supports null/unknown during validate)
+	Proxy types.Object `tfsdk:"proxy"`
 
 	// Computed
 	State          types.String `tfsdk:"state"`

@@ -78,7 +78,7 @@ func (w *DefaultClusterWait) WaitForClusterToBeReady(ctx context.Context, cluste
 	backoffSleep := 30 * time.Second
 	var result *cmv1.Cluster
 	for result == nil {
-		w.connection.Tokens()
+		_, _, _ = w.connection.Tokens()
 		result, err = pollClusterState(clusterID, ctx, waitTimeoutMin, w.collection)
 		if err != nil {
 			backoffAttempts--
@@ -122,7 +122,7 @@ func (w *DefaultClusterWait) WaitForClusterToBeDeleted(ctx context.Context, clus
 		case <-pollCtx.Done():
 			return fmt.Errorf("timeout waiting for cluster %s to be deleted: %w", clusterID, pollCtx.Err())
 		case <-ticker.C:
-			w.connection.Tokens()
+			_, _, _ = w.connection.Tokens()
 		}
 	}
 }
