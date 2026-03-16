@@ -19,12 +19,12 @@ Machine pool for an OSD cluster on GCP.
 
 - `cluster_id` (String) Identifier of the cluster.
 - `instance_type` (String) GCP machine type (e.g., custom-4-16384).
-- `name` (String) Name of the machine pool.
+- `name` (String) Name of the machine pool. Cannot be 'worker' or 'workers-*' (reserved for the default worker pool, which is not yet manageable as a machine pool resource).
 
 ### Optional
 
 - `autoscaling` (Attributes) Autoscaling configuration. (see [below for nested schema](#nestedatt--autoscaling))
-- `availability_zones` (List of String) GCP availability zones.
+- `availability_zones` (List of String) GCP availability zones. When not specified, OCM assigns a default zone; this value is populated from the API after create.
 - `gcp` (Attributes) GCP-specific machine pool options. (see [below for nested schema](#nestedatt--gcp))
 - `labels` (Map of String) Kubernetes labels.
 - `replicas` (Number) Number of replicas (when not using autoscaling).

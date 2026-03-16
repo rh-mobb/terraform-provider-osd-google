@@ -92,3 +92,11 @@ Use `tflog.Debug`, `tflog.Info`, `tflog.Warn`, `tflog.Error` with context — ne
 - `go:generate mockgen -source=<file> -package=<pkg> -destination=<out>` for interfaces
 - `go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate ...` for docs
 - Run `make generate` and ensure generated files are committed
+
+## After Schema or Resource Changes
+
+When adding, modifying, or removing provider attributes, resources, or data sources:
+
+1. **Regenerate docs:** Run `make docs` and commit the updated `docs/`. CI fails if docs are stale.
+2. **Update templates:** If adding a new resource or changing behavior, update `templates/` (e.g., guides, index) as needed.
+3. **Update CHANGELOG.md:** Add an entry under `[Unreleased]` in the appropriate section (`Added`, `Changed`, `Fixed`, etc.). Follow [Keep a Changelog](https://keepachangelog.com/) format.

@@ -23,8 +23,8 @@ OpenShift Dedicated (OSD) cluster on Google Cloud Platform. CCS clusters require
 
 ### Optional
 
-- `autoscaling` (Attributes) Autoscaling configuration for worker nodes. (see [below for nested schema](#nestedatt--autoscaling))
-- `availability_zones` (List of String) GCP availability zones for the cluster. Defaults to a single zone when not specified.
+- `autoscaling` (Object) Autoscaling configuration for worker nodes. (see [below for nested schema](#nestedatt--autoscaling))
+- `availability_zones` (List of String) GCP availability zones for the cluster. When specified: must be exactly 1 zone for single-AZ (multi_az = false), or exactly 3 zones for multi-AZ (multi_az = true). Omit to let OCM choose. Ensure the compute machine type is available in each zone (e.g. bare metal types are zone-specific).
 - `billing_model` (String) Billing model for the cluster. For CCS clusters, defaults to 'marketplace-gcp'. Set to 'standard' to use standard billing. Only 'standard' and 'marketplace-gcp' are allowed.
 - `ccs_enabled` (Boolean) Enable Customer Cloud Subscription (CCS) mode.
 - `compute_machine_type` (String) GCP machine type for worker nodes (e.g., custom-4-16384). Defaults to n2-standard-4 when not specified.
@@ -32,15 +32,15 @@ OpenShift Dedicated (OSD) cluster on Google Cloud Platform. CCS clusters require
 - `domain_prefix` (String) DNS domain prefix for the cluster.
 - `gcp_authentication` (Attributes) GCP service account authentication (when not using WIF). (see [below for nested schema](#nestedatt--gcp_authentication))
 - `gcp_encryption_key` (Attributes) Customer-managed encryption key (CMEK) for CCS clusters. (see [below for nested schema](#nestedatt--gcp_encryption_key))
-- `gcp_network` (Attributes) GCP network configuration for BYO VPC. Set vpc_project_id only for Shared VPC (host project differs from cluster project). (see [below for nested schema](#nestedatt--gcp_network))
+- `gcp_network` (Object) GCP network configuration for BYO VPC. Set vpc_project_id only for Shared VPC (host project differs from cluster project). (see [below for nested schema](#nestedatt--gcp_network))
 - `marketplace_gcp_terms` (Boolean) Whether GCP marketplace terms have been accepted.
 - `multi_az` (Boolean) Deploy across multiple availability zones.
-- `network` (Attributes) Network CIDR configuration. (see [below for nested schema](#nestedatt--network))
-- `private_service_connect` (Attributes) Private Service Connect configuration. (see [below for nested schema](#nestedatt--private_service_connect))
+- `network` (Object) Network CIDR configuration. (see [below for nested schema](#nestedatt--network))
+- `private_service_connect` (Object) Private Service Connect configuration. (see [below for nested schema](#nestedatt--private_service_connect))
 - `product` (String) Product type (default: osd).
 - `properties` (Map of String) Cluster properties.
-- `proxy` (Attributes) Proxy configuration. (see [below for nested schema](#nestedatt--proxy))
-- `security` (Attributes) GCP security settings. (see [below for nested schema](#nestedatt--security))
+- `proxy` (Object) Proxy configuration. (see [below for nested schema](#nestedatt--proxy))
+- `security` (Object) GCP security settings. (see [below for nested schema](#nestedatt--security))
 - `version` (String) OpenShift version (e.g., 4.16.1).
 - `wait_for_create_complete` (Boolean) Wait for cluster to be ready after creation. Defaults to true.
 - `wait_timeout` (Number) Timeout in minutes for cluster create and delete wait. Defaults to 60.
@@ -61,7 +61,7 @@ OpenShift Dedicated (OSD) cluster on Google Cloud Platform. CCS clusters require
 <a id="nestedatt--autoscaling"></a>
 ### Nested Schema for `autoscaling`
 
-Required:
+Optional:
 
 - `max_replicas` (Number)
 - `min_replicas` (Number)
@@ -100,15 +100,12 @@ Required:
 <a id="nestedatt--gcp_network"></a>
 ### Nested Schema for `gcp_network`
 
-Required:
+Optional:
 
 - `compute_subnet` (String)
 - `control_plane_subnet` (String)
 - `vpc_name` (String)
-
-Optional:
-
-- `vpc_project_id` (String) Host project ID for Shared VPC. Omit when the VPC is in the same project as the cluster.
+- `vpc_project_id` (String)
 
 
 <a id="nestedatt--network"></a>
@@ -125,7 +122,7 @@ Optional:
 <a id="nestedatt--private_service_connect"></a>
 ### Nested Schema for `private_service_connect`
 
-Required:
+Optional:
 
 - `service_attachment_subnet` (String)
 

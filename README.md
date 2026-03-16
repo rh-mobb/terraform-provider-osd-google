@@ -345,8 +345,10 @@ make acceptance-test
 
 ```bash
 make tools   # install tfplugindocs
-make docs    # generate docs in docs/
+make docs    # generate docs in docs/ from templates and schema
 ```
+
+Run `make docs` before every PR when you change provider schema, resources, data sources, or templates. CI fails if `docs/` is out of date.
 
 ### Code Formatting
 
