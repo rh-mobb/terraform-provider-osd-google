@@ -12,7 +12,7 @@
 terraform {
   required_providers {
     osdgoogle = {
-      source  = "terraform.local/local/osd-google"
+      source  = "registry.terraform.io/rh-mobb/osd-google"
       version = ">= 0.0.1"
     }
     google = {

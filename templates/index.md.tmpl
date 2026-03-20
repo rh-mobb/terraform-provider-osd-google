@@ -3,12 +3,16 @@
 page_title: "osdgoogle Provider"
 subcategory: ""
 description: |-
-  Terraform provider for Red Hat OpenShift Dedicated (OSD) on Google Cloud Platform (GCP).
+  Terraform provider for Red Hat OpenShift Dedicated (OSD) on Google Cloud Platform (GCP). Experimental software from the Managed OpenShift Black Belt team; not production-ready.
 ---
 
 # osdgoogle Provider
 
 The osdgoogle provider manages Red Hat OpenShift Dedicated (OSD) clusters on Google Cloud Platform via the OpenShift Cluster Manager (OCM) API. It supports creating clusters with Workload Identity Federation (WIF), machine pools, and identity providers.
+
+## Project status
+
+This provider is **experimental** software built and maintained by the **Red Hat Managed OpenShift Black Belt** team. It is **not** a supported Red Hat product and **should not be considered production-ready**. Use at your own risk; behavior and APIs may change without notice.
 
 ## Introduction
 

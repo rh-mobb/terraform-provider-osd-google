@@ -1,8 +1,7 @@
 terraform {
   required_providers {
-    # Use terraform.local for local dev (make install). When published, use registry.terraform.io/rh-mobb/osd-google
     osdgoogle = {
-      source  = "terraform.local/local/osd-google"
+      source  = "registry.terraform.io/rh-mobb/osd-google"
       version = ">= 0.0.1"
     }
     google = {
