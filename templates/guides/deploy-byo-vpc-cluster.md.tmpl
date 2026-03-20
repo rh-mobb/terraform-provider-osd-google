@@ -9,6 +9,8 @@ description: |-
 
 This guide shows how to deploy a Red Hat OpenShift Dedicated (OSD) cluster on GCP with a module-managed VPC. The `osd-vpc` module creates the VPC, subnets, Cloud NAT, and optional Private Service Connect (PSC) resources. The `osd-wif-config` and `osd-cluster` modules handle Workload Identity Federation and cluster creation.
 
+> **Note:** The osdgoogle provider is **experimental** software from the **Red Hat Managed OpenShift Black Belt** team. It is **not** production-ready and is **not** a supported Red Hat product.
+
 ## Prerequisites
 
 * **OCM token** — Generate an offline token at [console.redhat.com/openshift/token/rosa](https://console.redhat.com/openshift/token/rosa)

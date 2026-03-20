@@ -2,6 +2,8 @@
 
 A [Terraform](https://www.terraform.io/) provider for managing [OpenShift Dedicated (OSD)](https://cloud.redhat.com/openshift) clusters on Google Cloud Platform (GCP). The provider uses the OpenShift Cluster Manager (OCM) API to provision and manage OSD clusters with support for Workload Identity Federation (WIF), Private Service Connect (PSC), Shared VPC, and CMEK encryption.
 
+**Note:** This provider is **experimental** software built and maintained by the **Red Hat Managed OpenShift Black Belt** team. It is **not** a supported Red Hat product and **should not be considered production-ready**. Use at your own risk; behavior and APIs may change without notice.
+
 ## Features
 
 ### Resources

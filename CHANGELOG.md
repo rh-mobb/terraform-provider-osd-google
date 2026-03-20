@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Documented that the provider is experimental, maintained by the Managed OpenShift Black Belt team, and not production-ready (README, provider docs, guides)
+- Examples, `terraform/wif_config`, and `osd-cluster` / `osd-wif-config` modules now declare `registry.terraform.io/rh-mobb/osd-google` as the provider source (use `dev_overrides` or dev Makefile targets for local builds)
+
 ### Deprecated
 
 ### Removed

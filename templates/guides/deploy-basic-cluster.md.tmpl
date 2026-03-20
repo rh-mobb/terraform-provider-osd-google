@@ -9,6 +9,8 @@ description: |-
 
 This guide walks through deploying a basic OSD cluster on Google Cloud Platform with default networking. The cluster uses Workload Identity Federation (WIF) for secure, keyless authentication between OCM and your GCP project.
 
+> **Note:** The osdgoogle provider is **experimental** software from the **Red Hat Managed OpenShift Black Belt** team. It is **not** production-ready and is **not** a supported Red Hat product.
+
 ## Prerequisites
 
 Before you begin, ensure you have:
