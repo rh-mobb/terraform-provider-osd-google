@@ -22,12 +22,15 @@ In addition, OCM returns a "blueprint" (workload identity pool ID, service accou
 ```bash
 cd terraform/wif_config
 terraform init
-terraform apply -var="gcp_project_id=my-project" -var="cluster_name=my-cluster"
+export TF_VAR_gcp_project_id="my-project"
+export TF_VAR_cluster_name="my-cluster"
+terraform apply
 ```
 
-Or use `terraform.tfvars`:
+Or use `terraform.tfvars` (uncomment and set `gcp_project_id` / `cluster_name`).
 
-```hcl
-gcp_project_id = "my-gcp-project"
-cluster_name   = "my-wif-cluster"
+Or pass variables on the command line:
+
+```bash
+terraform apply -var="gcp_project_id=my-project" -var="cluster_name=my-cluster"
 ```

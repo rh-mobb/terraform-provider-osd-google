@@ -56,7 +56,7 @@ make dev.cluster.destroy           # Destroy with local build
 
 Use `dev.<example>` for any example: `cluster`, `cluster_psc`, `cluster_shared_vpc`, `cluster_baremetal`, `cluster_multi_az`, `cluster_with_vpc`.
 
-The Make targets infer `gcp_project_id` from `gcloud config` and `cluster_name` from your username (override with `GCP_PROJECT_ID` and `CLUSTER_NAME`). See [cluster/README.md](cluster/README.md) for full documentation.
+Set `gcp_project_id` and `cluster_name` via `TF_VAR_gcp_project_id` / `TF_VAR_cluster_name`, or uncomment them in `terraform/wif_config/terraform.tfvars` and the example’s `terraform.tfvars` (same `cluster_name` in both). The Makefile preflight accepts a project from `gcloud config` or `TF_VAR_gcp_project_id`. See [cluster/README.md](cluster/README.md) for full documentation.
 
 ### 4. Iterate
 

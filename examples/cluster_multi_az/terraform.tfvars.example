@@ -1,8 +1,8 @@
-# GCP project ID for the cluster (required)
-gcp_project_id = "my-gcp-project"
+# GCP project ID for the cluster (required). Set via TF_VAR_gcp_project_id or uncomment:
+#gcp_project_id = "my-gcp-project"
 
-# Name of the OSD cluster (must match terraform/wif_config)
-cluster_name = "my-multiaz-cluster"
+# Name of the OSD cluster (must match terraform/wif_config). Set via TF_VAR_cluster_name or uncomment:
+#cluster_name = "my-multiaz-cluster"
 
 # OpenShift version (x.y.z)
 openshift_version = "4.21.3"

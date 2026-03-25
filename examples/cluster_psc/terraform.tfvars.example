@@ -1,14 +1,14 @@
 # OCM offline token. Prefer OSDGOOGLE_TOKEN env var.
 #ocm_token = ""
 
-# GCP project ID (required)
-gcp_project_id = "my-gcp-project"
+# GCP project ID (required). Set via TF_VAR_gcp_project_id or uncomment:
+#gcp_project_id = "my-gcp-project"
 
 # Subnet name or CIDR for PSC service attachment (required)
 psc_subnet = "psc-subnet"
 
-# Cluster name (must match terraform/wif_config)
-cluster_name = "my-psc-cluster"
+# Cluster name (must match terraform/wif_config). Set via TF_VAR_cluster_name or uncomment:
+#cluster_name = "my-psc-cluster"
 
 # OpenShift version
 openshift_version = "4.21.3"

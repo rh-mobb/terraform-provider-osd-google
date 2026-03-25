@@ -215,7 +215,7 @@ make dev.cluster.plan              # Plan with local provider build
 make dev.cluster.destroy           # Destroy with local provider build
 ```
 
-The Make targets infer `gcp_project_id` from `gcloud config` and `cluster_name` from your username. See [examples/cluster/README.md](examples/cluster/README.md) for details.
+Set `gcp_project_id` and `cluster_name` via `TF_VAR_gcp_project_id` / `TF_VAR_cluster_name`, or uncomment them in each example’s `terraform.tfvars` and in `terraform/wif_config/terraform.tfvars` (same `cluster_name` in both). The Makefile preflight accepts a project from `gcloud config` or `TF_VAR_gcp_project_id`. See [examples/cluster/README.md](examples/cluster/README.md) for details.
 
 ## AI Agent Development
 
@@ -284,7 +284,7 @@ make dev.cluster.plan               # Plan only
 make dev.cluster.destroy            # Destroy cluster + WIF
 ```
 
-Use `dev.<example>` for any example: `dev.cluster`, `dev.cluster_baremetal`, `dev.cluster_with_vpc`, `dev.cluster_psc`, `dev.cluster_shared_vpc`, `dev.cluster_multi_az`. Override `GCP_PROJECT_ID` and `CLUSTER_NAME` as needed. Each run uses the freshly built provider.
+Use `dev.<example>` for any example: `dev.cluster`, `dev.cluster_baremetal`, `dev.cluster_with_vpc`, `dev.cluster_psc`, `dev.cluster_shared_vpc`, `dev.cluster_multi_az`. Set `gcp_project_id` and `cluster_name` via `TF_VAR_*` or `terraform.tfvars`. Each run uses the freshly built provider.
 
 > **Note:** Terraform prints a warning about `dev_overrides` being active. This is expected and safe to ignore during development.
 

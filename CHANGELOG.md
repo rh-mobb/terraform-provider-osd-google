@@ -9,8 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Makefile target `example.<name>.login` — runs `oc login` using `api_url`, `admin_username`, and `admin_password` from the example’s Terraform state (examples that expose those outputs, e.g. `cluster`); does not run `terraform init` (expects the example directory already initialized after apply)
+- Makefile targets `wif.init`, `wif.plan`, `wif.apply`, and `wif.destroy` — operate on `terraform/wif_config` only (run from repository root; same `terraform.tfvars` / `TF_VAR_*` conventions as example targets)
+
 ### Changed
 
+- Example Makefile targets no longer pass `gcp_project_id` or `cluster_name` on the command line; set them via `TF_VAR_gcp_project_id` / `TF_VAR_cluster_name`, or uncomment values in `terraform.tfvars` (use the same `cluster_name` in `terraform/wif_config` and each example)
 - Documented that the provider is experimental, maintained by the Managed OpenShift Black Belt team, and not production-ready (README, provider docs, guides)
 - Examples, `terraform/wif_config`, and `osd-cluster` / `osd-wif-config` modules now declare `registry.terraform.io/rh-mobb/osd-google` as the provider source (use `dev_overrides` or dev Makefile targets for local builds)
 
@@ -18,7 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- `modules/osd-ilb-routing` and `examples/cluster_ilb_routing` — moved to
+  [osd-gcp-cudn-routing](https://github.com/rh-mobb/osd-gcp-cudn-routing)
+
 ### Fixed
+
+- Makefile `wif.*`, `example.*`, and `dev.*` targets: removed gcloud-based project preflight and fixed `TF_VARS` so Terraform receives optional extra args (`$(TF_VARS)`); variables come only from `terraform.tfvars` / `TF_VAR_*` as documented
+- `example.<name>.login` no longer breaks `oc login` with wrong host (`lookup PI` / empty URL): GNU Make was expanding `$(terraform ...)` and treating `$$API` as `$A` + `PI`; the recipe now uses shell backticks only (no Make `$(...)` or `$`-prefixed shell variables in the Makefile)
 
 ### Security
 
