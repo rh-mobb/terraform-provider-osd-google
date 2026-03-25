@@ -1,8 +1,8 @@
 # OCM offline token or access token (optional; use OSDGOOGLE_TOKEN env)
 #ocm_token = "your-token"
 
-# GCP service project ID where cluster resources are created (required)
-gcp_project_id = "my-service-project"
+# GCP service project ID where cluster resources are created (required). Set via TF_VAR_gcp_project_id or uncomment:
+#gcp_project_id = "my-service-project"
 
 # OpenShift version (x.y.z)
 openshift_version = "4.21.3"
@@ -19,8 +19,8 @@ compute_subnet = "worker-subnet"
 # Subnet name for control plane nodes (required)
 control_plane_subnet = "control-plane-subnet"
 
-# Name of the OSD cluster
-cluster_name = "my-shared-vpc-cluster"
+# Name of the OSD cluster. Set via TF_VAR_cluster_name or uncomment:
+#cluster_name = "my-shared-vpc-cluster"
 
 # Additional machine pools (optional). If autoscaling_enabled = true, set min_replicas and max_replicas. If false, set replicas.
 # machine_pools = [

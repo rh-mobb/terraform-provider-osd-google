@@ -53,3 +53,5 @@ Thumbs.db
 tmp/
 .cache/
 *.log
+# Provider binary from `make build` / `make install` (repo root; Windows uses *.exe above)
+terraform-provider-osd-google

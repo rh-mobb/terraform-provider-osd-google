@@ -25,12 +25,19 @@ help:
 	@echo "  install           Build and install to ~/.terraform.d/plugins"
 	@echo "  dev-setup         Print dev_overrides config for ~/.terraformrc"
 	@echo ""
+	@echo "  wif.init                Init terraform/wif_config only"
+	@echo "  wif.plan                Plan terraform/wif_config"
+	@echo "  wif.apply               Apply terraform/wif_config (OCM WIF; run from repo root)"
+	@echo "  wif.destroy             Destroy terraform/wif_config state"
+	@echo "  (WIF / example / dev: variables from terraform.tfvars or TF_VAR_*; optional make TF_VARS=\"-var-file=...\")"
+	@echo ""
 	@echo "  Per-example targets (each handles WIF config + cluster lifecycle):"
 	@echo "  example.<name>          Apply WIF config then example (shorthand for .apply)"
 	@echo "  example.<name>.init     Init terraform/wif_config and examples/<name>"
 	@echo "  example.<name>.plan     Plan WIF config then example"
 	@echo "  example.<name>.apply    Apply WIF config then example"
 	@echo "  example.<name>.destroy  Destroy example then WIF config"
+	@echo "  example.<name>.login    oc login using api_url and admin credentials from terraform output"
 	@echo ""
 	@echo "  Dev targets (install provider, clear lock, re-init, then run):"
 	@echo "  dev.<name>              Apply with freshly installed provider"
@@ -90,11 +97,25 @@ MODULES := $(sort $(notdir $(wildcard modules/*/)))
 
 WIF_CONFIG_DIR := terraform/wif_config
 
-# Inferred defaults (override with: make example.cluster.apply GCP_PROJECT_ID=my-proj CLUSTER_NAME=my-cluster)
-GCP_PROJECT_ID ?= $(shell gcloud config get-value project 2>/dev/null)
-CLUSTER_NAME ?= $(shell echo "$${USER:-$$(whoami)}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$$//')
-# Lazily evaluated so gcloud/whoami don't run during Makefile parse
-TF_VARS = -var="gcp_project_id=$(GCP_PROJECT_ID)" -var="cluster_name=$(CLUSTER_NAME)"
+# WIF-only lifecycle (terraform/wif_config). Run from repository root; variables come from
+# terraform/wif_config/terraform.tfvars or TF_VAR_* (same as example targets).
+.PHONY: wif.init wif.plan wif.apply wif.destroy
+wif.init:
+	@cd $(WIF_CONFIG_DIR) && terraform init -upgrade
+
+wif.plan: wif.init
+	@cd $(WIF_CONFIG_DIR) && terraform plan $(TF_VARS)
+
+wif.apply: wif.init
+	@echo "Applying $(WIF_CONFIG_DIR)..."
+	@cd $(WIF_CONFIG_DIR) && terraform apply -auto-approve $(TF_VARS)
+
+wif.destroy: wif.init
+	@cd $(WIF_CONFIG_DIR) && terraform destroy -auto-approve $(TF_VARS)
+
+# Optional extra CLI args for terraform (e.g. TF_VARS="-var-file=custom.tfvars").
+# Variables are otherwise supplied by terraform.tfvars and/or TF_VAR_* in the environment.
+TF_VARS :=
 EXTRA_TF_VARS ?=
 
 # Per-example targets: each handles the full WIF + cluster lifecycle.
@@ -102,7 +123,7 @@ EXTRA_TF_VARS ?=
 # Add extra vars: make example.cluster_shared_vpc.apply EXTRA_TF_VARS="-var=vpc_name=my-vpc"
 # EXTRA_TF_VARS are only passed to the example dir, not the WIF config.
 define example-targets
-.PHONY: example.$(1) example.$(1).init example.$(1).plan example.$(1).apply example.$(1).destroy
+.PHONY: example.$(1) example.$(1).init example.$(1).plan example.$(1).apply example.$(1).destroy example.$(1).login
 example.$(1): example.$(1).apply
 
 example.$(1).init:
@@ -110,28 +131,36 @@ example.$(1).init:
 	@cd examples/$(1) && terraform init -upgrade
 
 example.$(1).plan: example.$(1).init
-	@[ -n "$$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
-	@echo "Planning WIF config (project=$$(GCP_PROJECT_ID), cluster_name=$$(CLUSTER_NAME))..."
-	@cd $(WIF_CONFIG_DIR) && terraform plan $$(TF_VARS)
+	@echo "Planning WIF config..."
+	@cd $(WIF_CONFIG_DIR) && terraform plan $(TF_VARS)
 	@echo ""
 	@echo "Planning examples/$(1)..."
-	@cd examples/$(1) && terraform plan $$(TF_VARS) $$(EXTRA_TF_VARS)
+	@cd examples/$(1) && terraform plan $(TF_VARS) $(EXTRA_TF_VARS)
 
 example.$(1).apply: example.$(1).init
-	@[ -n "$$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
-	@echo "Step 1: Creating WIF config in OCM (project=$$(GCP_PROJECT_ID), cluster_name=$$(CLUSTER_NAME))..."
-	@cd $(WIF_CONFIG_DIR) && terraform apply -auto-approve $$(TF_VARS)
+	@echo "Step 1: Creating WIF config in OCM..."
+	@cd $(WIF_CONFIG_DIR) && terraform apply -auto-approve $(TF_VARS)
 	@echo ""
 	@echo "Step 2: Applying examples/$(1)..."
-	@cd examples/$(1) && terraform apply -auto-approve $$(TF_VARS) $$(EXTRA_TF_VARS)
+	@cd examples/$(1) && terraform apply -auto-approve $(TF_VARS) $(EXTRA_TF_VARS)
 
 example.$(1).destroy: example.$(1).init
-	@[ -n "$$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
 	@echo "Step 1: Destroying examples/$(1)..."
-	@cd examples/$(1) && terraform destroy -auto-approve $$(TF_VARS) $$(EXTRA_TF_VARS)
+	@cd examples/$(1) && terraform destroy -auto-approve $(TF_VARS) $(EXTRA_TF_VARS)
 	@echo ""
 	@echo "Step 2: Destroying WIF config..."
-	@cd $(WIF_CONFIG_DIR) && terraform destroy -auto-approve $$(TF_VARS)
+	@cd $(WIF_CONFIG_DIR) && terraform destroy -auto-approve $(TF_VARS)
+
+# Use shell backticks for terraform output, not $(...): GNU Make expands $(...) in
+# recipes as Make variables. Also avoid $$API — Make parses that as $A + PI (variable A).
+example.$(1).login:
+	@command -v oc >/dev/null 2>&1 || (echo "Error: OpenShift CLI (oc) not found on PATH."; exit 1)
+	@cd examples/$(1) && \
+		terraform output -raw api_url >/dev/null 2>&1 || { echo "Error: terraform output failed. Initialize and apply this example first (e.g. make example.$(1).apply)."; exit 1; }; \
+		test -n "`terraform output -raw api_url`" || { echo "Error: api_url is empty in Terraform state."; exit 1; }; \
+		oc login "`terraform output -raw api_url`" \
+			-u "`terraform output -raw admin_username`" \
+			-p "`terraform output -raw admin_password`"
 endef
 $(foreach ex,$(EXAMPLES),$(eval $(call example-targets,$(ex))))
 
@@ -147,28 +176,25 @@ dev.$(1).init: install
 	@cd examples/$(1) && terraform init -upgrade
 
 dev.$(1).plan: dev.$(1).init
-	@[ -n "$$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
 	@echo "Planning WIF config (dev)..."
-	@cd $(WIF_CONFIG_DIR) && terraform plan $$(TF_VARS)
+	@cd $(WIF_CONFIG_DIR) && terraform plan $(TF_VARS)
 	@echo ""
 	@echo "Planning examples/$(1) (dev)..."
-	@cd examples/$(1) && terraform plan $$(TF_VARS) $$(EXTRA_TF_VARS)
+	@cd examples/$(1) && terraform plan $(TF_VARS) $(EXTRA_TF_VARS)
 
 dev.$(1).apply: dev.$(1).init
-	@[ -n "$$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
 	@echo "Step 1: Creating WIF config in OCM (dev)..."
-	@cd $(WIF_CONFIG_DIR) && terraform apply -auto-approve $$(TF_VARS)
+	@cd $(WIF_CONFIG_DIR) && terraform apply -auto-approve $(TF_VARS)
 	@echo ""
 	@echo "Step 2: Applying examples/$(1) (dev)..."
-	@cd examples/$(1) && terraform apply -auto-approve $$(TF_VARS) $$(EXTRA_TF_VARS)
+	@cd examples/$(1) && terraform apply -auto-approve $(TF_VARS) $(EXTRA_TF_VARS)
 
 dev.$(1).destroy: dev.$(1).init
-	@[ -n "$$(GCP_PROJECT_ID)" ] || (echo "Error: GCP project not set. Run: gcloud config set project YOUR_PROJECT"; exit 1)
 	@echo "Step 1: Destroying examples/$(1) (dev)..."
-	@cd examples/$(1) && terraform destroy -auto-approve $$(TF_VARS) $$(EXTRA_TF_VARS)
+	@cd examples/$(1) && terraform destroy -auto-approve $(TF_VARS) $(EXTRA_TF_VARS)
 	@echo ""
 	@echo "Step 2: Destroying WIF config (dev)..."
-	@cd $(WIF_CONFIG_DIR) && terraform destroy -auto-approve $$(TF_VARS)
+	@cd $(WIF_CONFIG_DIR) && terraform destroy -auto-approve $(TF_VARS)
 endef
 $(foreach ex,$(EXAMPLES),$(eval $(call dev-targets,$(ex))))
 

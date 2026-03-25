@@ -825,13 +825,13 @@ func (r *ClusterResource) populateState(ctx context.Context, cluster *cmv1.Clust
 	}
 
 	if gcpNet := cluster.GCPNetwork(); gcpNet != nil {
-		vpcProjectID := ""
+		vpcProjectIDVal := types.StringNull()
 		if id, ok := gcpNet.GetVPCProjectID(); ok && id != "" {
-			vpcProjectID = id
+			vpcProjectIDVal = types.StringValue(id)
 		}
 		obj, diags := types.ObjectValue(gcpNetworkObjectType.AttrTypes, map[string]attr.Value{
 			"vpc_name":             types.StringValue(gcpNet.VPCName()),
-			"vpc_project_id":       types.StringValue(vpcProjectID),
+			"vpc_project_id":       vpcProjectIDVal,
 			"compute_subnet":       types.StringValue(gcpNet.ComputeSubnet()),
 			"control_plane_subnet": types.StringValue(gcpNet.ControlPlaneSubnet()),
 		})

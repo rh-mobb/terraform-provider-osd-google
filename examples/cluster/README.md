@@ -40,7 +40,7 @@ From the repository root:
 make example.cluster
 ```
 
-This applies `terraform/wif_config/` first, then `examples/cluster/` with the same variables. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why WIF config runs in a separate apply. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why the WIF config runs in a separate apply.
+This applies `terraform/wif_config/` first, then `examples/cluster/` with the same variables. See [terraform/wif_config/README.md](../../terraform/wif_config/README.md) for why the WIF config runs in a separate apply.
 
 For **local provider testing** (build, install to `~/.terraform.d/plugins`, re-init, then run), use the `dev.*` targets. No `dev_overrides` in `~/.terraformrc` needed:
 
@@ -52,8 +52,8 @@ make dev.cluster.destroy
 
 ### Variables
 
-- **`gcp_project_id`** (required) — GCP project ID.
-- **`cluster_name`** (default: `my-wif-cluster`) — Must match the value used in `terraform/wif_config/`.
+- **`gcp_project_id`** (required) — GCP project ID. Set via `TF_VAR_gcp_project_id` or uncomment in `terraform.tfvars`.
+- **`cluster_name`** (default in this example: `my-cluster`) — Must match the value used in `terraform/wif_config/`. Set via `TF_VAR_cluster_name` or uncomment in both `terraform.tfvars` files.
 - **`openshift_version`** (default: `4.21.3`) — OpenShift version. Match the cluster version.
 - **`admin_password`** (optional) — Cluster admin password. Omit to auto-generate.
 
