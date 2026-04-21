@@ -7,24 +7,43 @@ variable "ocm_token" {
 
 variable "gcp_project_id" {
   type        = string
-  description = "GCP project ID for the cluster"
-}
-
-variable "psc_subnet" {
-  type        = string
-  description = "Subnet name or CIDR for PSC service attachment"
+  description = "GCP project ID for the cluster and bastion VM"
 }
 
 variable "cluster_name" {
   type        = string
-  default     = "my-psc-cluster"
-  description = "Name of the cluster (must match terraform/wif_config)"
+  default     = "my-private-cluster"
+  description = "Cluster name (must match terraform/wif_config display_name prefix)"
 }
 
 variable "openshift_version" {
   type        = string
   default     = "4.21.3"
   description = "OpenShift version (x.y.z)"
+}
+
+variable "gcp_region" {
+  type        = string
+  default     = "us-central1"
+  description = "GCP region for the cluster and bastion"
+}
+
+variable "bastion_zone" {
+  type        = string
+  default     = "us-central1-a"
+  description = "GCP zone for the bastion VM (must be within gcp_region)"
+}
+
+variable "bastion_machine_type" {
+  type        = string
+  default     = "e2-medium"
+  description = "GCP machine type for the bastion VM (e2-micro is too small for dnf/yum installs)"
+}
+
+variable "bastion_use_worker_subnet" {
+  type        = bool
+  default     = true
+  description = "Place the bastion in the worker subnet instead of a dedicated bastion subnet. Gives the bastion identical firewall rules, NAT, and Private Google Access to worker nodes. Useful for debugging cluster connectivity."
 }
 
 variable "machine_pools" {

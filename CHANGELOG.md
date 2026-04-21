@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- `examples/cluster_psc`: removed — superseded by `examples/cluster_private`, which covers PSC and also sets the cluster API to internal-only.
+
 ### Added
 
+- `osdgoogle_cluster`: new `private` boolean attribute — when `true`, sets the OCM API server listening method to `internal`, restricting the cluster API endpoint to private (internal) connectivity only. Requires a BYO VPC (`gcp_network`) and Private Service Connect (`private_service_connect`). Cannot be changed after cluster creation (forces replacement).
+- `modules/osd-cluster`: new `private` variable wired to `osdgoogle_cluster.private`.
+- `examples/cluster_private`: new example — fully private OSD cluster (API internal-only) with PSC, BYO VPC, and a CentOS Stream 9 bastion VM reachable via `gcloud` IAP SSH tunneling. Includes `make example.cluster_private.ssh` (interactive shell) and `make example.cluster_private.tunnel` (local port-forward for the cluster API) Makefile targets.
 - Makefile target `example.<name>.login` — runs `oc login` using `api_url`, `admin_username`, and `admin_password` from the example’s Terraform state (examples that expose those outputs, e.g. `cluster`); does not run `terraform init` (expects the example directory already initialized after apply)
 - Makefile targets `wif.init`, `wif.plan`, `wif.apply`, and `wif.destroy` — operate on `terraform/wif_config` only (run from repository root; same `terraform.tfvars` / `TF_VAR_*` conventions as example targets)
 

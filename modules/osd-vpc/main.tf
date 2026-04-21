@@ -9,19 +9,21 @@ resource "google_compute_network" "vpc" {
 }
 
 resource "google_compute_subnetwork" "master" {
-  project       = var.project_id
-  name          = "${var.cluster_name}-master-subnet"
-  ip_cidr_range = var.master_cidr
-  region        = var.region
-  network       = google_compute_network.vpc.id
+  project                  = var.project_id
+  name                     = "${var.cluster_name}-master-subnet"
+  ip_cidr_range            = var.master_cidr
+  region                   = var.region
+  network                  = google_compute_network.vpc.id
+  private_ip_google_access = true
 }
 
 resource "google_compute_subnetwork" "worker" {
-  project       = var.project_id
-  name          = "${var.cluster_name}-worker-subnet"
-  ip_cidr_range = var.worker_cidr
-  region        = var.region
-  network       = google_compute_network.vpc.id
+  project                  = var.project_id
+  name                     = "${var.cluster_name}-worker-subnet"
+  ip_cidr_range            = var.worker_cidr
+  region                   = var.region
+  network                  = google_compute_network.vpc.id
+  private_ip_google_access = true
 }
 
 resource "google_compute_router" "router" {
