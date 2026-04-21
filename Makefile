@@ -61,6 +61,8 @@ help:
 	@echo "  references        Clone or update reference repos for AI agent context"
 	@echo ""
 
+SHELL := /bin/bash
+
 export CGO_ENABLED=0
 
 ifeq ($(shell go env GOOS),windows)
@@ -298,7 +300,7 @@ lint_go:
 	golangci-lint run ./provider/... ./build/... ./logging/... .
 
 .PHONY: lint_tf
-lint_tf: install
+lint_tf: build
 	@rm -f $(WIF_CONFIG_DIR)/.terraform.lock.hcl
 	@for ex in $(EXAMPLES); do rm -f examples/$$ex/.terraform.lock.hcl; done
 	@for mod in $(MODULES); do rm -f modules/$$mod/.terraform.lock.hcl; done

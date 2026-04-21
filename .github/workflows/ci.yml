@@ -66,6 +66,17 @@ jobs:
       - name: Build
         run: make build
 
+      - name: Configure Terraform dev overrides
+        run: |
+          cat > ~/.terraformrc <<EOF
+          provider_installation {
+            dev_overrides {
+              "registry.terraform.io/rh-mobb/osd-google" = "${{ github.workspace }}"
+            }
+            direct {}
+          }
+          EOF
+
       - name: Terraform validate
         run: make lint_tf
 
