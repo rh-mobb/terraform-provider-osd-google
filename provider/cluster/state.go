@@ -121,6 +121,11 @@ type ClusterState struct {
 	// Proxy (types.Object supports null/unknown during validate)
 	Proxy types.Object `tfsdk:"proxy"`
 
+	// Private cluster: API endpoint and ingress use internal listening only.
+	// Requires BYO VPC (gcp_network) and Private Service Connect (private_service_connect).
+	// Cannot be changed after cluster creation.
+	Private types.Bool `tfsdk:"private"`
+
 	// Computed
 	State          types.String `tfsdk:"state"`
 	APIURL         types.String `tfsdk:"api_url"`

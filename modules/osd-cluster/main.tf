@@ -51,6 +51,7 @@ resource "osdgoogle_cluster" "cluster" {
   billing_model            = var.billing_model
   properties               = var.properties
   compute_machine_type     = var.compute_machine_type
+  private                  = var.private
   gcp_network              = var.gcp_network
   private_service_connect  = var.private_service_connect
   security                 = var.security
