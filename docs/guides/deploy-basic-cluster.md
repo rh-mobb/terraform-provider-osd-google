@@ -15,7 +15,7 @@ This guide walks through deploying a basic OSD cluster on Google Cloud Platform 
 
 Before you begin, ensure you have:
 
-* An [OCM offline token](https://console.redhat.com/openshift/token/rosa)
+* An [OCM offline token](https://console.redhat.com/openshift/token)
 * A GCP project with billing enabled and the [required APIs](https://cloud.google.com/iam/docs/workload-identity-federation) for WIF
 * Application Default Credentials configured (`gcloud auth application-default login`)
 * [Minimum GCP IAM permissions](../#minimum-gcp-iam-permissions): `roles/iam.workloadIdentityPoolAdmin`, `roles/iam.serviceAccountAdmin`, `roles/iam.roleAdmin`, `roles/resourcemanager.projectIamAdmin`, and `roles/resourcemanager.projectViewer`

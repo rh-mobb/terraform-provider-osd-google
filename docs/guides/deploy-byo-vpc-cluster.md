@@ -13,7 +13,7 @@ This guide shows how to deploy a Red Hat OpenShift Dedicated (OSD) cluster on GC
 
 ## Prerequisites
 
-* **OCM token** — Generate an offline token at [console.redhat.com/openshift/token/rosa](https://console.redhat.com/openshift/token/rosa)
+* **OCM token** — Generate an offline token at [console.redhat.com/openshift/token/rosa](https://console.redhat.com/openshift/token)
 * **GCP project** — With billing enabled and APIs required for OSD
 * **GCP credentials** — `gcloud auth application-default login` for the identity that will run Terraform
 * **Minimum GCP permissions** — `roles/iam.workloadIdentityPoolAdmin`, `roles/iam.serviceAccountAdmin`, `roles/iam.roleAdmin`, `roles/resourcemanager.projectIamAdmin`, `roles/compute.networkAdmin`, `roles/compute.routerAdmin`. Add `roles/dns.admin` if using PSC.
