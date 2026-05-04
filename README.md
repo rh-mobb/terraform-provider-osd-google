@@ -39,7 +39,7 @@ A [Terraform](https://www.terraform.io/) provider for managing [OpenShift Dedica
 
 - [Terraform](https://www.terraform.io/downloads) >= 1.0
 - [Go](https://go.dev/) 1.24+ (for building from source)
-- OCM token from [console.redhat.com](https://console.redhat.com/openshift/token/rosa)
+- OCM token from [console.redhat.com](https://console.redhat.com/openshift/token)
 - GCP project with billing enabled and OSD entitlements
 
 ## Installation
@@ -68,7 +68,7 @@ The provider requires credentials to access the OCM API. You can use either a **
 ### Obtaining an OCM token
 
 1. Log in to [Red Hat Hybrid Cloud Console](https://console.redhat.com)
-2. Go to **OpenShift** → **Token** ([direct link](https://console.redhat.com/openshift/token/rosa))
+2. Go to **OpenShift** → **Token** ([direct link](https://console.redhat.com/openshift/token))
 3. Click **Load token** or **Copy** to copy your offline token
 4. Use it in the provider:
 

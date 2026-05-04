@@ -34,7 +34,7 @@ Terraform is an infrastructure-as-code tool that allows you to define resources 
 
 To use the osdgoogle provider inside your Terraform configuration you must meet the following:
 
-* **OCM token** — An offline [OCM token](https://console.redhat.com/openshift/token/rosa) from the Red Hat Hybrid Cloud Console. This token verifies your access and permission to create and manage clusters. The token is unique to your account and should not be shared.
+* **OCM token** — An offline [OCM token](https://console.redhat.com/openshift/token) from the Red Hat Hybrid Cloud Console. This token verifies your access and permission to create and manage clusters. The token is unique to your account and should not be shared.
 
 * **GCP project** — A Google Cloud project with billing enabled and the required APIs enabled for OSD on GCP.
 
@@ -133,7 +133,7 @@ Example configurations are available in the [terraform-provider-osd-google](http
 - `client_secret` (String, Sensitive) OpenID client secret for client credentials authentication. Env: OSDGOOGLE_CLIENT_SECRET.
 - `insecure` (Boolean) When set to 'true' enables insecure communication with the server. This disables verification of TLS certificates and host names. Not recommended for production.
 - `openshift_version` (String) Default OpenShift version (x.y.z) for cluster and WIF resources. Overridable per resource.
-- `token` (String, Sensitive) Access or refresh token generated from https://console.redhat.com/openshift/token/rosa
+- `token` (String, Sensitive) Access or refresh token generated from https://console.redhat.com/openshift/token
 - `token_url` (String) TokenURL is the URL for requesting OpenID access tokens. The default is `https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token`
 - `trusted_cas` (String) PEM encoded certificates of authorities that will be trusted. If not specified, the system default CAs are used.
 - `url` (String) URL sets the base URL of the API gateway. The default is `https://api.openshift.com`
