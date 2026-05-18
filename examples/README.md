@@ -54,7 +54,7 @@ make dev.cluster.plan              # Plan with local build
 make dev.cluster.destroy           # Destroy with local build
 ```
 
-Use `dev.<example>` for any example: `cluster`, `cluster_psc`, `cluster_shared_vpc`, `cluster_baremetal`, `cluster_multi_az`, `cluster_with_vpc`.
+Use `dev.<example>` for any example: `cluster`, `cluster_psc`, `cluster_shared_vpc`, `cluster_baremetal`, `cluster_multi_az`, `cluster_with_vpc`, `wif-kms-key`.
 
 Set `gcp_project_id` and `cluster_name` via `TF_VAR_gcp_project_id` / `TF_VAR_cluster_name`, or uncomment them in `terraform/wif_config/terraform.tfvars` and the example’s `terraform.tfvars` (same `cluster_name` in both). The Makefile preflight accepts a project from `gcloud config` or `TF_VAR_gcp_project_id`. See [cluster/README.md](cluster/README.md) for full documentation.
 
@@ -78,5 +78,6 @@ terraform plan
 | [cluster_psc](cluster_psc) | Cluster with Private Service Connect and Secure Boot |
 | [cluster_shared_vpc](cluster_shared_vpc) | Cluster using a Shared VPC |
 | [cluster_multi_az](cluster_multi_az) | Multi-AZ cluster across multiple availability zones |
+| [wif-kms-key](wif-kms-key) | Cluster with WIF and Customer-Managed Encryption Key (CMEK) |
 
 WIF config (`terraform/wif_config/`) is shared infrastructure applied automatically by the Makefile before each example. It uses the [osd-wif-config](../modules/osd-wif-config) module to create the WIF config in OCM. The cluster examples use the [osd-cluster](../modules/osd-cluster) module, which looks up the WIF config and provisions GCP IAM + the cluster. See [terraform/wif_config/README.md](../terraform/wif_config/README.md) for why it runs in a separate apply.

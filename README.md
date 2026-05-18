@@ -196,6 +196,7 @@ For local development, use `dev_overrides` so Terraform uses your local build wi
 | [cluster_psc](examples/cluster_psc) | Cluster with Private Service Connect and Secure Boot |
 | [cluster_shared_vpc](examples/cluster_shared_vpc) | Cluster using a Shared VPC |
 | [cluster_multi_az](examples/cluster_multi_az) | Multi-AZ cluster with bare metal machine pool |
+| [wif-kms-key](examples/wif-kms-key) | Cluster with WIF and Customer-Managed Encryption Key (CMEK) |
 
 Every `make example.<name>` target handles the full lifecycle — WIF config ([`terraform/wif_config/`](terraform/wif_config/README.md)) is applied first, then the cluster. On destroy, the cluster is destroyed first, then the WIF config:
 
@@ -286,7 +287,7 @@ make dev.cluster.plan               # Plan only
 make dev.cluster.destroy            # Destroy cluster + WIF
 ```
 
-Use `dev.<example>` for any example: `dev.cluster`, `dev.cluster_baremetal`, `dev.cluster_with_vpc`, `dev.cluster_psc`, `dev.cluster_shared_vpc`, `dev.cluster_multi_az`. Set `gcp_project_id` and `cluster_name` via `TF_VAR_*` or `terraform.tfvars`. Each run uses the freshly built provider.
+Use `dev.<example>` for any example: `dev.cluster`, `dev.cluster_baremetal`, `dev.cluster_with_vpc`, `dev.cluster_psc`, `dev.cluster_shared_vpc`, `dev.cluster_multi_az`, `dev.wif-kms-key`. Set `gcp_project_id` and `cluster_name` via `TF_VAR_*` or `terraform.tfvars`. Each run uses the freshly built provider.
 
 > **Note:** Terraform prints a warning about `dev_overrides` being active. This is expected and safe to ignore during development.
 
