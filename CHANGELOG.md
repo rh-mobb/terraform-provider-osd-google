@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `osdgoogle_cluster`: new `private` boolean attribute — when `true`, sets the OCM API server listening method to `internal`, restricting the cluster API endpoint to private (internal) connectivity only. Requires a BYO VPC (`gcp_network`) and Private Service Connect (`private_service_connect`). Cannot be changed after cluster creation (forces replacement).
 - `modules/osd-cluster`: new `private` variable wired to `osdgoogle_cluster.private`.
 - `examples/cluster_private`: new example — fully private OSD cluster (API internal-only) with PSC, BYO VPC, and a CentOS Stream 9 bastion VM reachable via `gcloud` IAP SSH tunneling. Includes `make example.cluster_private.ssh` (interactive shell) and `make example.cluster_private.tunnel` (local port-forward for the cluster API) Makefile targets.
+- Example [`wif-kms-key`](examples/wif-kms-key) — demonstrates provisioning an OSD CCS cluster with both Workload Identity Federation (WIF) and Customer-Managed Encryption Keys (CMEK); documents the two required IAM grants: a dedicated KMS service account (passed as `kms_key_service_account`) and the Compute Engine Service Agent (validated independently by OCM)
+- Guide [Adopt an existing OSD cluster (import only)](docs/guides/adopt-existing-cluster.md) — documents `terraform import` for `osdgoogle_cluster` only, clarifies that WIF, VPC, and other resources are out of scope, and points exhaustive adoption workflows to the Cursor project skill
 - Makefile target `example.<name>.login` — runs `oc login` using `api_url`, `admin_username`, and `admin_password` from the example’s Terraform state (examples that expose those outputs, e.g. `cluster`); does not run `terraform init` (expects the example directory already initialized after apply)
 - Makefile targets `wif.init`, `wif.plan`, `wif.apply`, and `wif.destroy` — operate on `terraform/wif_config` only (run from repository root; same `terraform.tfvars` / `TF_VAR_*` conventions as example targets)
 
@@ -34,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `osdgoogle_cluster`: `gcp_encryption_key` was never read back from the OCM API in `populateState`, causing Terraform state to always reflect the configured value rather than what OCM stored; drift (e.g. key rotation or out-of-band changes) was silently ignored. State now reflects the actual OCM value after every plan/apply/refresh.
 - Makefile `wif.*`, `example.*`, and `dev.*` targets: removed gcloud-based project preflight and fixed `TF_VARS` so Terraform receives optional extra args (`$(TF_VARS)`); variables come only from `terraform.tfvars` / `TF_VAR_*` as documented
 - `example.<name>.login` no longer breaks `oc login` with wrong host (`lookup PI` / empty URL): GNU Make was expanding `$(terraform ...)` and treating `$$API` as `$A` + `PI`; the recipe now uses shell backticks only (no Make `$(...)` or `$`-prefixed shell variables in the Makefile)
 

@@ -227,6 +227,8 @@ make references
 
 Run the same command at any time to pull the latest changes from each repo's default branch. See [AGENTS.md](AGENTS.md#references) for a description of each reference and what it is useful for.
 
+**Cursor skills:** This repo includes an optional agent skill for adopting an existing OSD-on-GCP deployment into variable-driven Terraform (examples, modules, import notes). See [.cursor/skills/osd-gcp-cluster-to-terraform/SKILL.md](.cursor/skills/osd-gcp-cluster-to-terraform/SKILL.md).
+
 ## Development
 
 ### Requirements

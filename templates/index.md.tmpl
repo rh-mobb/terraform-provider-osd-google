@@ -110,6 +110,7 @@ Choose a deployment path based on your networking requirements:
 
 * [Deploy a basic cluster](guides/deploy-basic-cluster.md) — Use default networking with the `osd-wif-config` and `osd-cluster` modules.
 * [Deploy a BYO VPC cluster](guides/deploy-byo-vpc-cluster.md) — Bring your own VPC using the `osd-vpc`, `osd-wif-config`, and `osd-cluster` modules, with optional Private Service Connect (PSC).
+* [Adopt an existing cluster (import only)](guides/adopt-existing-cluster.md) — Import `osdgoogle_cluster` by OCM ID only; does not cover WIF, VPC, or GCP resources. For full-stack adoption, use the Cursor skill linked from the [README](https://github.com/rh-mobb/terraform-provider-osd-google/blob/main/README.md#ai-agent-development).
 
 ## Example Terraform configurations
 

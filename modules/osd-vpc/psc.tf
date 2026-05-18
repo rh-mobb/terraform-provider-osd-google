@@ -3,7 +3,8 @@
 
 locals {
   # GCP PSC Google APIs forwarding rules allow only lowercase letters and digits (no hyphens),
-  # max 20 characters. Strip hyphens and truncate the cluster name prefix to fit.
+  # max 20 characters. Strip hyphens and truncate the cluster name prefix to 13 so adding
+  # the "pscapis" suffix (7 chars) always stays within the 20-character limit.
   psc_rule_name = "${substr(replace(var.cluster_name, "-", ""), 0, 13)}pscapis"
 }
 
