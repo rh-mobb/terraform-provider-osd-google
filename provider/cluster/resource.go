@@ -842,5 +842,16 @@ func (r *ClusterResource) populateState(ctx context.Context, cluster *cmv1.Clust
 		state.GCPNetwork = types.ObjectNull(gcpNetworkObjectType.AttrTypes)
 	}
 
+	if encKey := cluster.GCPEncryptionKey(); encKey != nil {
+		state.GCPEncryptionKey = &GCPEncryptionKeyState{
+			KmsKeyServiceAccount: types.StringValue(encKey.KMSKeyServiceAccount()),
+			KeyLocation:          types.StringValue(encKey.KeyLocation()),
+			KeyName:              types.StringValue(encKey.KeyName()),
+			KeyRing:              types.StringValue(encKey.KeyRing()),
+		}
+	} else {
+		state.GCPEncryptionKey = nil
+	}
+
 	return nil
 }
