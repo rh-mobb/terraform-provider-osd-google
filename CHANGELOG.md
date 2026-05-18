@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Documentation templates (`templates/`) and guides now use the generic Hybrid Cloud Console OCM token URL (`/openshift/token`) consistently, matching README and provider schema (no leftover `/openshift/token/rosa` links).
 - `osdgoogle_cluster`: `gcp_encryption_key` was never read back from the OCM API in `populateState`, causing Terraform state to always reflect the configured value rather than what OCM stored; drift (e.g. key rotation or out-of-band changes) was silently ignored. State now reflects the actual OCM value after every plan/apply/refresh.
 - Makefile `wif.*`, `example.*`, and `dev.*` targets: removed gcloud-based project preflight and fixed `TF_VARS` so Terraform receives optional extra args (`$(TF_VARS)`); variables come only from `terraform.tfvars` / `TF_VAR_*` as documented
 - `example.<name>.login` no longer breaks `oc login` with wrong host (`lookup PI` / empty URL): GNU Make was expanding `$(terraform ...)` and treating `$$API` as `$A` + `PI`; the recipe now uses shell backticks only (no Make `$(...)` or `$`-prefixed shell variables in the Makefile)

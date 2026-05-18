@@ -82,7 +82,7 @@ func (p *Provider) Schema(ctx context.Context, req tfprovider.SchemaRequest, res
 				Optional:    true,
 			},
 			"token": tfpschema.StringAttribute{
-				Description: "Access or refresh token generated from https://console.redhat.com/openshift/token/rosa",
+				Description: "Access or refresh token generated from https://console.redhat.com/openshift/token",
 				Optional:    true,
 				Sensitive:   true,
 			},
@@ -166,7 +166,7 @@ func (p *Provider) Configure(ctx context.Context, req tfprovider.ConfigureReques
 		resp.Diagnostics.AddError(
 			"authentication required",
 			"Provide token (or OSDGOOGLE_TOKEN) or client_id+client_secret (or OSDGOOGLE_CLIENT_ID and OSDGOOGLE_CLIENT_SECRET). "+
-				"Get a token at https://console.redhat.com/openshift/token/rosa",
+				"Get a token at https://console.redhat.com/openshift/token",
 		)
 		return
 	}
