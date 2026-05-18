@@ -300,6 +300,8 @@ lint_go:
 	golangci-lint run ./provider/... ./build/... ./logging/... .
 
 .PHONY: lint_tf
+# build (not install) so the binary stays at the repo root where dev_overrides can find it.
+# install would move the binary to ~/.terraform.d/plugins, breaking dev_overrides resolution.
 lint_tf: build
 	@rm -f $(WIF_CONFIG_DIR)/.terraform.lock.hcl
 	@for ex in $(EXAMPLES); do rm -f examples/$$ex/.terraform.lock.hcl; done

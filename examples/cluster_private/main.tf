@@ -55,7 +55,7 @@ resource "google_compute_subnetwork" "bastion" {
   project       = var.gcp_project_id
 }
 
-# Cloud NAT for the dedicated bastion subnet (skipped when bastion_use_worker_subnet = true
+# Cloud NAT for the dedicated bastion subnet (skipped when bastion_use_worker_subnet = true)
 # because the worker subnet's NAT already covers the bastion in that case).
 resource "google_compute_router_nat" "nat_bastion" {
   count                              = var.bastion_use_worker_subnet ? 0 : 1
