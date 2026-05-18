@@ -1,6 +1,13 @@
 # Private Service Connect resources (optional)
 # Required for private OSD clusters with PSC
 
+locals {
+  # GCP PSC Google APIs forwarding rules allow only lowercase letters and digits (no hyphens),
+  # max 20 characters. Strip hyphens and truncate the cluster name prefix to 13 so adding
+  # the "pscapis" suffix (7 chars) always stays within the 20-character limit.
+  psc_rule_name = "${substr(replace(var.cluster_name, "-", ""), 0, 13)}pscapis"
+}
+
 resource "google_compute_subnetwork" "psc" {
   count         = var.enable_psc ? 1 : 0
   name          = "${var.cluster_name}-psc-subnet"
@@ -23,7 +30,7 @@ resource "google_compute_global_address" "psc" {
 
 resource "google_compute_global_forwarding_rule" "psc" {
   count                 = var.enable_psc ? 1 : 0
-  name                  = "${var.cluster_name}-psc-apis"
+  name                  = local.psc_rule_name
   target                = "all-apis"
   network               = google_compute_network.vpc.id
   ip_address            = google_compute_global_address.psc[0].id

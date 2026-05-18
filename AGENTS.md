@@ -99,6 +99,8 @@ When making changes to this codebase, AI agents **must**:
 
 The `references/` folder contains upstream source repositories and API specifications cloned locally to provide AI agents with rich, offline context. This folder is gitignored and must be cloned manually — see the [README](README.md#ai-agent-development) for instructions.
 
+Optional **Cursor project skill** for reverse-engineering an existing OSD-on-GCP stack into variable-driven Terraform (examples, modules, import guidance): [.cursor/skills/osd-gcp-cluster-to-terraform/SKILL.md](.cursor/skills/osd-gcp-cluster-to-terraform/SKILL.md).
+
 | Reference | What it is | Useful for |
 |-----------|------------|------------|
 | `references/OCM.json` | OpenAPI 3.0 spec for the OCM Cluster Management API (`clusters_mgmt/v1`, 153 endpoints) | Understanding the exact shape of OCM API requests and responses; discovering available fields, enums, and nested types without needing a running server |
