@@ -212,6 +212,18 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 					"type":                        schema.StringAttribute{Optional: true},
 				},
 			},
+			"private": schema.BoolAttribute{
+				Description: "Restrict the cluster API endpoint and application routes to private (internal) connectivity only. " +
+					"When true, the OCM API server listening method is set to 'internal'. " +
+					"Requires a BYO VPC (gcp_network) and Private Service Connect (private_service_connect). " +
+					"Cannot be changed after cluster creation.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+					boolplanmodifier.RequiresReplace(),
+				},
+			},
 			"private_service_connect": schema.ObjectAttribute{
 				Description:    "Private Service Connect configuration.",
 				Optional:       true,
@@ -735,6 +747,10 @@ func (r *ClusterResource) buildClusterObject(ctx context.Context, s *ClusterStat
 		}
 	}
 
+	if s.Private.ValueBool() {
+		builder.API(cmv1.NewClusterAPI().Listening(cmv1.ListeningMethodInternal))
+	}
+
 	return builder.Build()
 }
 
@@ -787,8 +803,14 @@ func (r *ClusterResource) populateState(ctx context.Context, cluster *cmv1.Clust
 
 	if cluster.API() != nil {
 		state.APIURL = types.StringValue(cluster.API().URL())
+		if listening, ok := cluster.API().GetListening(); ok {
+			state.Private = types.BoolValue(listening == cmv1.ListeningMethodInternal)
+		} else {
+			state.Private = types.BoolValue(false)
+		}
 	} else {
 		state.APIURL = types.StringValue("")
+		state.Private = types.BoolValue(false)
 	}
 	if cluster.Console() != nil {
 		state.ConsoleURL = types.StringValue(cluster.Console().URL())

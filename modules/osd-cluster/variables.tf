@@ -77,6 +77,13 @@ variable "properties" {
   description = "Cluster properties"
 }
 
+# Private cluster
+variable "private" {
+  type        = bool
+  default     = false
+  description = "Restrict cluster API endpoint to private (internal) listening only. Requires BYO VPC (gcp_network) and PSC (private_service_connect). Cannot be changed after creation."
+}
+
 # Network
 variable "gcp_network" {
   type = object({

@@ -36,6 +36,7 @@ OpenShift Dedicated (OSD) cluster on Google Cloud Platform. CCS clusters require
 - `marketplace_gcp_terms` (Boolean) Whether GCP marketplace terms have been accepted.
 - `multi_az` (Boolean) Deploy across multiple availability zones.
 - `network` (Object) Network CIDR configuration. (see [below for nested schema](#nestedatt--network))
+- `private` (Boolean) Restrict the cluster API endpoint and application routes to private (internal) connectivity only. When true, the OCM API server listening method is set to 'internal'. Requires a BYO VPC (gcp_network) and Private Service Connect (private_service_connect). Cannot be changed after cluster creation.
 - `private_service_connect` (Object) Private Service Connect configuration. (see [below for nested schema](#nestedatt--private_service_connect))
 - `product` (String) Product type (default: osd).
 - `properties` (Map of String) Cluster properties.

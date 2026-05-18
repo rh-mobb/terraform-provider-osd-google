@@ -7,10 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.1] - 2026-05-18
+### Removed
+
+- `examples/cluster_psc`: removed — superseded by `examples/cluster_private`, which covers PSC and also sets the cluster API to internal-only.
 
 ### Added
 
+- `osdgoogle_cluster`: new `private` boolean attribute — when `true`, sets the OCM API server listening method to `internal`, restricting the cluster API endpoint to private (internal) connectivity only. Requires a BYO VPC (`gcp_network`) and Private Service Connect (`private_service_connect`). Cannot be changed after cluster creation (forces replacement).
+- `modules/osd-cluster`: new `private` variable wired to `osdgoogle_cluster.private`.
+- `examples/cluster_private`: new example — fully private OSD cluster (API internal-only) with PSC, BYO VPC, and a CentOS Stream 9 bastion VM reachable via `gcloud` IAP SSH tunneling. Includes `make example.cluster_private.ssh` (interactive shell) and `make example.cluster_private.tunnel` (local port-forward for the cluster API) Makefile targets.
 - Example [`wif-kms-key`](examples/wif-kms-key) — demonstrates provisioning an OSD CCS cluster with both Workload Identity Federation (WIF) and Customer-Managed Encryption Keys (CMEK); documents the two required IAM grants: a dedicated KMS service account (passed as `kms_key_service_account`) and the Compute Engine Service Agent (validated independently by OCM)
 - Guide [Adopt an existing OSD cluster (import only)](docs/guides/adopt-existing-cluster.md) — documents `terraform import` for `osdgoogle_cluster` only, clarifies that WIF, VPC, and other resources are out of scope, and points exhaustive adoption workflows to the Cursor project skill
 - Makefile target `example.<name>.login` — runs `oc login` using `api_url`, `admin_username`, and `admin_password` from the example’s Terraform state (examples that expose those outputs, e.g. `cluster`); does not run `terraform init` (expects the example directory already initialized after apply)

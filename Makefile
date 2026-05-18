@@ -38,6 +38,8 @@ help:
 	@echo "  example.<name>.apply    Apply WIF config then example"
 	@echo "  example.<name>.destroy  Destroy example then WIF config"
 	@echo "  example.<name>.login    oc login using api_url and admin credentials from terraform output"
+	@echo "  example.cluster_private.ssh     Open IAP SSH session to the bastion VM"
+	@echo "  example.cluster_private.tunnel  Forward cluster API to localhost:6443 via bastion"
 	@echo ""
 	@echo "  Dev targets (install provider, clear lock, re-init, then run):"
 	@echo "  dev.<name>              Apply with freshly installed provider"
@@ -58,6 +60,8 @@ help:
 	@echo "  generate          Run go generate"
 	@echo "  references        Clone or update reference repos for AI agent context"
 	@echo ""
+
+SHELL := /bin/bash
 
 export CGO_ENABLED=0
 
@@ -164,13 +168,45 @@ example.$(1).login:
 endef
 $(foreach ex,$(EXAMPLES),$(eval $(call example-targets,$(ex))))
 
-# Dev targets: install provider, clear lock, re-init, then run.
+# Private cluster: open an interactive IAP SSH session to the bastion VM.
+# Requires: gcloud CLI, IAP API enabled, bastion created (example.cluster_private.apply).
+.PHONY: example.cluster_private.ssh
+example.cluster_private.ssh:
+	@command -v gcloud >/dev/null 2>&1 || (echo "Error: gcloud CLI not found on PATH."; exit 1)
+	@cd examples/cluster_private && \
+		BASTION=`terraform output -raw bastion_name` && \
+		ZONE=`terraform output -raw bastion_zone` && \
+		PROJECT=`terraform output -raw gcp_project_id` && \
+		echo "Connecting to $$BASTION ($$ZONE) via IAP..." && \
+		gcloud compute ssh "$$BASTION" --project="$$PROJECT" --zone="$$ZONE" --tunnel-through-iap
+
+# Private cluster: forward the cluster API port to localhost:6443 via the bastion.
+# After running this, use: oc login https://localhost:6443 -u <user> -p <pass> --insecure-skip-tls-verify=true
+# The bastion must be able to resolve and reach the cluster API hostname within the VPC.
+.PHONY: example.cluster_private.tunnel
+example.cluster_private.tunnel:
+	@command -v gcloud >/dev/null 2>&1 || (echo "Error: gcloud CLI not found on PATH."; exit 1)
+	@cd examples/cluster_private && \
+		BASTION=`terraform output -raw bastion_name` && \
+		ZONE=`terraform output -raw bastion_zone` && \
+		PROJECT=`terraform output -raw gcp_project_id` && \
+		API_URL=`terraform output -raw api_url` && \
+		API_HOST=$$(echo "$$API_URL" | sed 's|^https://||' | cut -d: -f1) && \
+		echo "Forwarding localhost:6443 -> $$API_HOST:6443 via $$BASTION (Ctrl-C to stop)..." && \
+		echo "Then run: oc login https://localhost:6443 -u admin -p <password> --insecure-skip-tls-verify=true" && \
+		gcloud compute ssh "$$BASTION" --project="$$PROJECT" --zone="$$ZONE" --tunnel-through-iap \
+			-- -L "6443:$$API_HOST:6443" -N
+
+# Dev targets: build provider (binary stays in repo root for dev_overrides), clear lock, re-init.
+# Requires dev_overrides in ~/.terraformrc pointing to this repo root (run: make dev-setup).
 # Usage: make dev.cluster_with_vpc.apply  make dev.cluster_psc.plan
 define dev-targets
 .PHONY: dev.$(1) dev.$(1).init dev.$(1).plan dev.$(1).apply dev.$(1).destroy
 dev.$(1): dev.$(1).apply
 
-dev.$(1).init: install
+# build (not install) so the binary stays at the repo root where dev_overrides can find it.
+# install would move the binary to ~/.terraform.d/plugins, breaking dev_overrides resolution.
+dev.$(1).init: build
 	@rm -f $(WIF_CONFIG_DIR)/.terraform.lock.hcl examples/$(1)/.terraform.lock.hcl
 	@cd $(WIF_CONFIG_DIR) && terraform init -upgrade
 	@cd examples/$(1) && terraform init -upgrade
@@ -264,7 +300,7 @@ lint_go:
 	golangci-lint run ./provider/... ./build/... ./logging/... .
 
 .PHONY: lint_tf
-lint_tf: install
+lint_tf: build
 	@rm -f $(WIF_CONFIG_DIR)/.terraform.lock.hcl
 	@for ex in $(EXAMPLES); do rm -f examples/$$ex/.terraform.lock.hcl; done
 	@for mod in $(MODULES); do rm -f modules/$$mod/.terraform.lock.hcl; done
