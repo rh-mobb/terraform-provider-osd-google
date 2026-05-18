@@ -61,6 +61,7 @@ help:
 	@echo "  references        Clone or update reference repos for AI agent context"
 	@echo ""
 
+# This Makefile relies on bash-specific features (arrays, [[ ]], and process substitution).
 SHELL := /bin/bash
 
 export CGO_ENABLED=0
